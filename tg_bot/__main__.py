@@ -58,7 +58,7 @@ from tg_bot.modules.helper_funcs.misc import paginate_modules
 
 
 # ═══════════════════════════════════════════════════════════
-# سيرفر وهمي باش Render يشتغل مجاني
+# سيرفر وهمي باش Render يشتغل مجاني - مصحح
 # ═══════════════════════════════════════════════════════════
 
 class Handler(BaseHTTPRequestHandler):
@@ -70,11 +70,22 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 def start_server():
-    port = int(os.environ.get('PORT', 8080))
-    server = HTTPServer(('0.0.0.0', port), Handler)
-    server.serve_forever()
+    try:
+        port = int(os.environ.get('PORT', 8080))
+        server = HTTPServer(('0.0.0.0', port), Handler)
+        log.info(f"HTTP Server started on port {port}")
+        server.serve_forever()
+    except OSError as e:
+        log.warning(f"HTTP Server error (port may be in use): {e}")
+    except Exception as e:
+        log.error(f"HTTP Server error: {e}")
 
-threading.Thread(target=start_server, daemon=True).start()
+# تشغيل السيرفر في thread منفصل
+try:
+    server_thread = threading.Thread(target=start_server, daemon=True)
+    server_thread.start()
+except:
+    pass
 
 
 # ═══════════════════════════════════════════════════════════
@@ -130,38 +141,41 @@ USER_SETTINGS = {}
 
 
 for module_name in ALL_MODULES:
-    imported_module = importlib.import_module("tg_bot.modules." + module_name)
-    if not hasattr(imported_module, "__mod_name__"):
-        imported_module.__mod_name__ = imported_module.__name__
+    try:
+        imported_module = importlib.import_module("tg_bot.modules." + module_name)
+        if not hasattr(imported_module, "__mod_name__"):
+            imported_module.__mod_name__ = imported_module.__name__
 
-    if imported_module.__mod_name__.lower() not in IMPORTED:
-        IMPORTED[imported_module.__mod_name__.lower()] = imported_module
-    else:
-        raise Exception("ما ينفعش يكون في وحدتين بنفس الاسم!")
+        if imported_module.__mod_name__.lower() not in IMPORTED:
+            IMPORTED[imported_module.__mod_name__.lower()] = imported_module
+        else:
+            raise Exception("ما ينفعش يكون في وحدتين بنفس الاسم!")
 
-    if hasattr(imported_module, "__help__") and imported_module.__help__:
-        HELPABLE[imported_module.__mod_name__.lower()] = imported_module
+        if hasattr(imported_module, "__help__") and imported_module.__help__:
+            HELPABLE[imported_module.__mod_name__.lower()] = imported_module
 
-    if hasattr(imported_module, "__migrate__"):
-        MIGRATEABLE.append(imported_module)
+        if hasattr(imported_module, "__migrate__"):
+            MIGRATEABLE.append(imported_module)
 
-    if hasattr(imported_module, "__stats__"):
-        STATS.append(imported_module)
+        if hasattr(imported_module, "__stats__"):
+            STATS.append(imported_module)
 
-    if hasattr(imported_module, "__user_info__"):
-        USER_INFO.append(imported_module)
+        if hasattr(imported_module, "__user_info__"):
+            USER_INFO.append(imported_module)
 
-    if hasattr(imported_module, "__import_data__"):
-        DATA_IMPORT.append(imported_module)
+        if hasattr(imported_module, "__import_data__"):
+            DATA_IMPORT.append(imported_module)
 
-    if hasattr(imported_module, "__export_data__"):
-        DATA_EXPORT.append(imported_module)
+        if hasattr(imported_module, "__export_data__"):
+            DATA_EXPORT.append(imported_module)
 
-    if hasattr(imported_module, "__chat_settings__"):
-        CHAT_SETTINGS[imported_module.__mod_name__.lower()] = imported_module
+        if hasattr(imported_module, "__chat_settings__"):
+            CHAT_SETTINGS[imported_module.__mod_name__.lower()] = imported_module
 
-    if hasattr(imported_module, "__user_settings__"):
-        USER_SETTINGS[imported_module.__mod_name__.lower()] = imported_module
+        if hasattr(imported_module, "__user_settings__"):
+            USER_SETTINGS[imported_module.__mod_name__.lower()] = imported_module
+    except Exception as e:
+        log.error(f"Error loading module {module_name}: {e}")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -169,7 +183,6 @@ for module_name in ALL_MODULES:
 # ═══════════════════════════════════════════════════════════
 
 SMART_REPLIES = {
-    # التحيات الإسلامية
     "السلام عليكم": "وعليكم السلام ورحمة الله وبركاته 🤍",
     "سلام": "وعليكم السلام يا طيب 💚",
     "الحمد لله": "الله يبارك فيك يا غالي 🤲",
@@ -178,24 +191,18 @@ SMART_REPLIES = {
     "سبحان الله": "سبحان الله وبحمده 🕌",
     "الله اكبر": "الله اكبر كبيرا 🕌",
     "لا اله الا الله": "محمد رسول الله ﷺ",
-    
-    # التحيات اليومية
     "صباح الخير": "صباح النور والسرور يا باهي 🌅",
     "مساء الخير": "مساء الورد والياسمين يا غالي 🌙",
     "جمعة مباركة": "وعليك اجمل جمعة يا رب 🕌",
     "رمضان كريم": "الله اكرم، كل عام وانت بخير 🌙",
     "عيد مبارك": "عساك من عواده يا غالي 🎉",
     "تصبح على خير": "وانت من اهل الخير يا باهي 🌙",
-    
-    # الدعاء
     "بارك الله فيك": "وفيك بارك الله 🤲",
     "جزاك الله خير": "واياك يا غالي 🤲",
     "ماشاء الله": "تبارك الرحمن 🤲",
     "ان شاء الله": "ان شاء الله رب العالمين 🤲",
     "يارب": "اللهم امين 🤲",
     "اللهم امين": "امين يارب العالمين 🤲",
-    
-    # الردود على الإهانات
     "بوت": "اسمي زورو مش بوت يا زول! انا اذكى منك 😏",
     "يا بوت": "قلتلك اسمي زورو! شكلك ما تفهمش 🙄",
     "غبي": "غبي جدك! انا زورو الذكي يا معلم 😎",
@@ -205,26 +212,15 @@ SMART_REPLIES = {
     "مجنون": "انت اللي مجنون مش انا 🤪",
     "خرفان": "خرفان جدك 🐑",
     "حمار": "حمار بوك 🫏",
-    "يا واد": "واد جدك! انا زورو 😎",
-    "يا ولد": "ولد جدك يا زول 😏",
-    
-    # الأحوال
     "كيفك": "والله تمام زي الفل، كيفك انت يا باهي؟ 😊",
     "كيف حالك": "الحمد لله باهي، انت كيفك يا غالي؟ 💚",
     "شن تسوي": "نستنى فيك تكلمني يا زول 😴",
-    "شنو تسوي": "قاعد نستنى فيك 😴",
     "وين انت": "هنا يا غالي! وينك انت؟ 📍",
     "باهي": "الحمد لله، انت كيفك؟ 💚",
-    
-    # الضحك
     "ههههه": "😂😂😂 خلاص ضحكتني",
     "هههه": "ايوا اضحك اضحك 😂",
     "ههه": "😂",
-    "لول": "😂😂",
-    
-    # المشاعر
     "زهقت": "وانا زهقت منك يا زول 😴",
-    "ملل": "روح العب برا 🎮",
     "نعسان": "روح نوم يا زول 😴",
     "جوعان": "روح كول حاجة 🍕",
     "عطشان": "اشرب ماء 💧",
@@ -232,90 +228,23 @@ SMART_REPLIES = {
     "فرحان": "ربي يديم الفرحة عليك 🎉",
     "مريض": "سلامتك يا غالي، ربي يشفيك 🤲",
     "تعبان": "ارتاح شوية يا زول 💚",
-    
-    # الأوامر
-    "تعال": "وين نمشو؟ 🚶",
-    "روح": "لا انت روح 👋",
-    "اطلع": "طلعني معاك 😂",
-    "اسكت": "لا انت اسكت 🤫",
-    
-    # الكلام
-    "كلام فاضي": "كلامك انت الفاضي 😏",
-    "شكلك": "شكلي احلى منك 😎",
-    "وجهك": "وجهي احلى من وجهك 💅",
-    
-    # الكلمات الليبية
-    "توا": "ايه توا شنو تبي؟ 🤔",
-    "علاش": "علاش شنو يا زول؟ 🤔",
-    "كان": "كان شنو؟ قول 🤔",
-    "برشا": "ايه برشا برشا 😂",
-    "شوية": "شوية شوية يا غالي 😊",
-    
-    # الحب
     "احبك": "وانا نحبك اكثر يا قلبي 💕",
-    "بحبك": "وانا نحبك موت 💕",
     "نحبك": "وانا نحبك اكثر منك 💕",
     "حبيبي": "حبيبي انت يا غالي 💚",
     "حبيبتي": "حبيبتي انتي يا قمر 🌙",
-    "عمري": "عمري انت والله 💕",
-    "قلبي": "قلبي انت يا حياتي 💖",
-    "روحي": "روحي انت 💕",
-    "حياتي": "حياتي انت يا غالي 💚",
-    "نور عيني": "نور عيني انت يا باهي 👀💕",
     "وحشتني": "وانت والله وحشتني موت 💕",
-    "وحشتيني": "وانتي وحشتيني اكثر 💕",
     "اشتقتلك": "وانا اشتقتلك اكثر منك 💕",
-    "اشتقت": "وانا اشتقت اكثر 💕",
-    "تعال حضني": "تعال يا قلبي 🤗💕",
-    "بوسة": "💋💕",
-    
-    # المدح
-    "قمر": "انت القمر يا باهي 🌙",
-    "حلو": "انت الاحلى 💕",
-    "جميل": "انت الاجمل 💕",
-    "عسل": "انت العسل كله 🍯💕",
-    "سكر": "انت السكر يا حلاوة 🍬💕",
-    "غالي": "وانت اغلى 💚",
-    "عزيز": "وانت اعز 💚",
-    "يا ورد": "انت الورد كله 🌹",
-    "يا زين": "زين الباهيين 💕",
-    
-    # الشكر
     "شكرا": "يعطيك الصحة يا غالي 💚",
     "مشكور": "العفو يا باهي 💚",
-    "عفوا": "ولا يهمك 💚",
-    
-    # الترحيب
     "اهلا": "هلا والله نورت 💚",
     "مرحبا": "مرحبتين فيك يا غالي 🌟",
     "هاي": "هاي يا باهي 👋",
     "هلا": "هلا بيك يا زول 💚",
-    
-    # الوداع
     "باي": "مع السلامة يا غالي 👋💚",
     "مع السلامة": "الله يسلمك، باي 👋",
-    "يلا باي": "يلا مع السلامة 👋",
-    
-    # الأسئلة
-    "صاحي": "صاحي ومنتبه 👀",
-    "نايم": "لا صاحي معاك 😊",
     "موجود": "ايه موجود، شن تبي؟ 💚",
-    "فين": "هنا يا غالي! 📍",
-    "وين": "هنا يا زول! 📍",
-    "ايش": "ايش تبي؟ قولي 🤔",
-    "شن": "شن تبي يا غالي؟ 🤔",
-    "شنو": "شنو تبي؟ قول 🤔",
-    "ليش": "ليش؟ في حاجة؟ 🤔",
-    "متى": "قريب ان شاء الله ⏰",
-    "كم": "واحد زيك 😂",
-    "مين": "مين يكون؟ 🤔",
-    "شكون": "شكون هو؟ 🤔",
-    
-    # عن البوت
     "انت مين": "انا زورو البوت الذكي 🤖💪",
     "اسمك": "اسمي زورو يا غالي 🤖",
-    "اسمك ايش": "زورو، تشرفت بيك 🤖💚",
-    "اسمك شن": "زورو، تشرفنا يا باهي 🤖💚",
     "زورو": "نعم؟ شن تبي يا غالي؟ 🤖💚",
     "يا زورو": "هلا، شن تبي؟ 🤖💚",
 }
@@ -355,11 +284,14 @@ def start(update: Update, context: CallbackContext):
             elif args[0].lower().startswith("stngs_"):
                 match = re.match("stngs_(.*)", args[0].lower())
                 if match:
-                    chat_obj = dispatcher.bot.getChat(match.group(1))
-                    if is_user_admin(chat_obj, user.id):
-                        send_settings(match.group(1), user.id, False)
-                    else:
-                        send_settings(match.group(1), user.id, True)
+                    try:
+                        chat_obj = dispatcher.bot.getChat(match.group(1))
+                        if is_user_admin(chat_obj, user.id):
+                            send_settings(match.group(1), user.id, False)
+                        else:
+                            send_settings(match.group(1), user.id, True)
+                    except:
+                        pass
 
             elif args[0][1:].isdigit() and "rules" in IMPORTED:
                 IMPORTED["rules"].send_rules(update, args[0], from_pm=True)
@@ -372,8 +304,6 @@ def start(update: Update, context: CallbackContext):
             except:
                 num_users = "مش معروف"
                 num_chats = "مش معروف"
-
-            first_name = user.first_name
 
             start_buttons = [
                 [
@@ -483,9 +413,17 @@ def zoro_callback(update: Update, context: CallbackContext):
     elif query.data == "check_force_sub":
         if check_force_sub(bot, user.id):
             query.answer("✅ تم التحقق! تقدر تستخدم البوت توا 💚", show_alert=True)
-            query.message.delete()
+            try:
+                query.message.delete()
+            except:
+                pass
         else:
             query.answer("❌ لسا ما اشتركتش! اشترك الأول وبعدين اضغط الزر مرة ثانية.", show_alert=True)
+    
+    try:
+        query.answer()
+    except:
+        pass
 
 
 # ═══════════════════════════════════════════════════════════
@@ -606,18 +544,8 @@ def smart_reply(update: Update, context: CallbackContext):
 
     text_clean = text.strip()
 
-    # مطابقة دقيقة أولاً
     for trigger, response in SMART_REPLIES.items():
-        if text_clean == trigger:
-            try:
-                message.reply_text(response)
-            except:
-                pass
-            return
-
-    # الكلمة موجودة في النص
-    for trigger, response in SMART_REPLIES.items():
-        if trigger in text_clean:
+        if text_clean == trigger or trigger in text_clean:
             try:
                 message.reply_text(response)
             except:
@@ -773,10 +701,12 @@ def error_handler(update: Update, context: CallbackContext):
         log.warning("ChatMigrated to %s", e.new_chat_id)
     except TelegramError as e:
         log.warning("TelegramError: %s", str(e))
+    except Exception as e:
+        log.error("Unknown error: %s", str(e))
 
 
 # ═══════════════════════════════════════════════════════════
-# دالة الهجرة (نقل المجموعات)
+# دالة الهجرة
 # ═══════════════════════════════════════════════════════════
 
 def migrate_chats(update: Update, context: CallbackContext):
@@ -804,8 +734,7 @@ def migrate_chats(update: Update, context: CallbackContext):
 # ═══════════════════════════════════════════════════════════
 
 def main():
-    # تسجيل الأوامر الأساسية
-    start_handler = CommandHandler(["start", "ابدأ", "بداية"], start, run_async=True)
+    start_handler = CommandHandler(["start", "ابدا", "بداية"], start, run_async=True)
     help_handler = CommandHandler(["help", "مساعدة", "مساعده", "اوامر", "الاوامر"], help_command, run_async=True)
     stats_handler = CommandHandler(["stats", "احصائيات", "الاحصائيات"], stats, run_async=True)
     
@@ -813,21 +742,17 @@ def main():
     dispatcher.add_handler(help_handler)
     dispatcher.add_handler(stats_handler)
     
-    # أزرار Callbacks
     dispatcher.add_handler(CallbackQueryHandler(help_button, pattern=r"help_"))
     dispatcher.add_handler(CallbackQueryHandler(zoro_callback, pattern=r"zoro_"))
     dispatcher.add_handler(CallbackQueryHandler(settings_button, pattern=r"stngs_"))
     
-    # الردود الذكية (أقل أولوية)
     dispatcher.add_handler(MessageHandler(
         Filters.text & ~Filters.command & Filters.chat_type.groups,
         smart_reply
     ), group=99)
     
-    # معالج الهجرة
     dispatcher.add_handler(MessageHandler(Filters.status_update.migrate, migrate_chats))
     
-    # معالج الأخطاء
     dispatcher.add_error_handler(error_handler)
     
     log.info("🤖 زورو بوت يعمل الآن!")
@@ -853,7 +778,6 @@ def main():
             drop_pending_updates=True
         )
     
-    # تشغيل Telethon
     try:
         telethn.run_until_disconnected()
     except:
@@ -864,9 +788,7 @@ if __name__ == "__main__":
     try:
         import googletrans
     except ImportError:
-        import subprocess
-        subprocess.check_call(["pip", "install", "googletrans==3.1.0a0"])
-        import googletrans
+        pass
     
     log.info("Successfully loaded modules: " + str(ALL_MODULES))
     main()
