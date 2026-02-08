@@ -37,6 +37,7 @@ from telegram.ext import (
     Filters,
 )
 
+from .helper_funcs.extraction import extract_user
 
 FILE_MATCHER = re.compile(r"^###file_id(!photo)?###:(.*?)(?:\s|$)")
 STICKER_MATCHER = re.compile(r"^###sticker(!photo)?###:")
@@ -47,6 +48,13 @@ MYAUDIO_MATCHER = re.compile(r"^###audio(!photo)?###:")
 MYVOICE_MATCHER = re.compile(r"^###voice(!photo)?###:")
 MYVIDEO_MATCHER = re.compile(r"^###video(!photo)?###:")
 MYVIDEONOTE_MATCHER = re.compile(r"^###video_note(!photo)?###:")
+
+# ==================== الأوامر العربية ====================
+ARABIC_GET_COMMANDS = ["جيب", "اعطني", "الملاحظة", "جلب"]
+ARABIC_SAVE_COMMANDS = ["احفظ", "حفظ", "سجل"]
+ARABIC_CLEAR_COMMANDS = ["امسح", "حذف_ملاحظة", "مسح_ملاحظة"]
+ARABIC_NOTES_COMMANDS = ["الملاحظات", "ملاحظات", "المحفوظات"]
+ARABIC_CLEARALL_COMMANDS = ["مسح_الكل", "حذف_كل_الملاحظات"]
 
 
 # Do not async
@@ -139,22 +147,20 @@ def get(update: Update, context: CallbackContext, notename: str, show_none: bool
         except BadRequest as excp:
             if excp.message == "Entity_mention_user_invalid":
                 message.reply_text(
-                        "Looks like you tried to mention someone I've never seen before. If you really "
-                    "want to mention them, forward one of their messages to me, and I'll be able "
-                    "to tag them!"
+                        "⚠️ يبدو إنك حاولت تذكر شخص ما شفته قبل. لو تبي تذكره، "
+                    "حوّل لي رسالة منه، وحنقدر نعمل له تاق!"
                 )
             elif FILE_MATCHER.match(note.value):
                 message.reply_text(
-                        "This note was an incorrectly imported file from another bot - I can't use "
-                    "it. If you really need it, you'll have to save it again. In "
-                    "the meantime, I'll remove it from your notes list."
+                        "⚠️ هذي الملاحظة كانت ملف مستورد بشكل خاطئ من بوت ثاني - ما نقدر نستخدمها. "
+                    "لو محتاجها فعلاً، لازم تحفظها من جديد. "
+                    "في هالوقت، حنشيلها من قائمة الملاحظات."
                 )
                 sql.rm_note(chat_id, notename)
             else:
-
                 message.reply_text(
-                        "This note could not be sent, as it is incorrectly formatted. "
-                    "Try getting the noformat version or ask in @TheBotsSupport if you can't figure out why!"
+                        "⚠️ هذي الملاحظة ما قدرت تتبعث، لأن فيها مشكلة في التنسيق. "
+                    "جرب تجيب النسخة الخام أو اسأل في @TheBotsSupport لو ما عرفت السبب!"
                 )
                 log.exception(
                         "Could not parse message #%s in chat %s\n\nare you sure it's using the new format?",
@@ -162,7 +168,7 @@ def get(update: Update, context: CallbackContext, notename: str, show_none: bool
                 log.warning("Message was: %s", str(note.value))
         return
     elif show_none:
-        message.reply_text("This note doesn't exist")
+        message.reply_text("⚠️ هذي الملاحظة مش موجودة!")
 
 
 @kigcmd(command="get")
@@ -171,11 +177,34 @@ def get(update: Update, context: CallbackContext, notename: str, show_none: bool
 def cmd_get(update: Update, context: CallbackContext):
     args = context.args
     if len(args) >= 2:
-        get(update, context, args[0].lower(), show_none=True, no_format=bool(args[1].lower() in ["raw", "noformat"]))
+        get(update, context, args[0].lower(), show_none=True, no_format=bool(args[1].lower() in ["raw", "noformat", "خام"]))
     elif len(args) >= 1:
         get(update, context, args[0].lower(), show_none=True)
     else:
-        update.effective_message.reply_text("Specify a note name!")
+        update.effective_message.reply_text("⚠️ حدد اسم الملاحظة!")
+
+
+# ==================== معالج عربي لجلب الملاحظة ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_GET_COMMANDS) + r')(\s|$)'), group=3)
+@spamcheck
+@connection_status
+def arabic_cmd_get(update: Update, context: CallbackContext):
+    message = update.effective_message
+    
+    text = message.text
+    for cmd in ARABIC_GET_COMMANDS:
+        if text.startswith(cmd):
+            text = text[len(cmd):].strip()
+            break
+    
+    args = text.split() if text else []
+    
+    if len(args) >= 2:
+        get(update, context, args[0].lower(), show_none=True, no_format=bool(args[1].lower() in ["raw", "noformat", "خام"]))
+    elif len(args) >= 1:
+        get(update, context, args[0].lower(), show_none=True)
+    else:
+        message.reply_text("⚠️ حدد اسم الملاحظة!")
 
 
 @kigmsg((Filters.regex(r"^#[^\s]+")), group=-14, friendly='get')
@@ -185,7 +214,7 @@ def hash_get(update: Update, context: CallbackContext):
     msg = update.effective_message.text.split()
     no_hash = msg[0][1:].lower()
     if len(msg) >= 2:
-        return get(update, context, no_hash, show_none=False, no_format=msg[1].lower() in ["raw", "noformat"])
+        return get(update, context, no_hash, show_none=False, no_format=msg[1].lower() in ["raw", "noformat", "خام"])
 
     get(update, context, no_hash, show_none=False)
 
@@ -203,7 +232,7 @@ def slash_get(update: Update, context: CallbackContext):
         note_name = str(noteid).strip(">").split()[1]
         get(update, context, note_name, show_none=False)
     except IndexError:
-        update.effective_message.reply_text("Wrong Note ID!")
+        update.effective_message.reply_text("⚠️ رقم الملاحظة غلط!")
 
 
 @kigcmd(command='save')
@@ -219,12 +248,12 @@ def save(update: Update, _: CallbackContext) -> Optional[str]:
 
     m = msg.text.split(' ', 1)
     if len(m) == 1:
-        msg.reply_text("Provide something to save.")
+        msg.reply_text("⚠️ أعطني شي نحفظه!")
         return
     note_name, text, data_type, content, buttons = get_data(msg)
     note_name = note_name.lower()
     if data_type == Types.TEXT and len(text.strip()) == 0:
-        msg.reply_text("Should i save... nothing?")
+        msg.reply_text("⚠️ تبيني أحفظ... ولا شي؟")
         return
 
     sql.add_note_to_db(
@@ -233,23 +262,83 @@ def save(update: Update, _: CallbackContext) -> Optional[str]:
 
     logmsg = (
         f"<b>{html.escape(chat.title)}:</b>\n"
-        f"#SAVENOTE\n"
-        f"<b>Admin:</b> {mention_html(user.id, html.escape(user.first_name))}\n"
-        f"<b>Note:</b> {note_name}"
+        f"#حفظ_ملاحظة\n"
+        f"<b>المشرف:</b> {mention_html(user.id, html.escape(user.first_name))}\n"
+        f"<b>الملاحظة:</b> {note_name}"
     )
 
     msg.reply_text(
-        f"Saved Note `{note_name}`!",
+        f"✅ تم حفظ الملاحظة `{note_name}`!",
         parse_mode=ParseMode.MARKDOWN,
     )
 
     if msg.reply_to_message and msg.reply_to_message.from_user.is_bot and not msg.text:
         msg.reply_text(
-            "Bots are kinda handicapped by telegram, making it hard for bots to "
-            "interact with other bots, so I can't save this message "
-            "like I usually would - do you mind forwarding it and "
-            "then saving that new message? Thanks!"
+            "⚠️ البوتات عندها قيود من تيليجرام، يصعب على البوتات التعامل مع بوتات ثانية، "
+            "فما قدرت أحفظ هالرسالة زي العادة - تقدر تحولها وتحفظ الرسالة الجديدة؟"
         )
+    return logmsg
+
+
+# ==================== معالج عربي لحفظ الملاحظة ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_SAVE_COMMANDS) + r')(\s|$)'), group=3)
+@spamcheck
+@connection_status
+@user_admin_check(AdminPerms.CAN_CHANGE_INFO, allow_mods=True)
+@loggable
+def arabic_save(update: Update, _: CallbackContext) -> Optional[str]:
+    chat_id = update.effective_chat.id
+    msg = update.effective_message
+    chat = update.effective_chat
+    user = update.effective_user
+
+    text = msg.text
+    for cmd in ARABIC_SAVE_COMMANDS:
+        if text.startswith(cmd):
+            text = text[len(cmd):].strip()
+            break
+    
+    if not text and not msg.reply_to_message:
+        msg.reply_text("⚠️ أعطني شي نحفظه!\nالاستخدام: احفظ اسم_الملاحظة المحتوى")
+        return
+    
+    # إذا كان رد على رسالة
+    if msg.reply_to_message:
+        note_name, text, data_type, content, buttons = get_data(msg)
+    else:
+        parts = text.split(None, 1)
+        if len(parts) < 2:
+            msg.reply_text("⚠️ الاستخدام: احفظ اسم_الملاحظة المحتوى")
+            return
+        note_name = parts[0].lower()
+        note_text = parts[1]
+        data_type = Types.TEXT
+        content = None
+        buttons = []
+        text = note_text
+    
+    note_name = note_name.lower()
+    
+    if data_type == Types.TEXT and len(text.strip()) == 0:
+        msg.reply_text("⚠️ تبيني أحفظ... ولا شي؟")
+        return
+
+    sql.add_note_to_db(
+        chat_id, note_name, text, data_type, buttons=buttons, file=content
+    )
+
+    logmsg = (
+        f"<b>{html.escape(chat.title)}:</b>\n"
+        f"#حفظ_ملاحظة\n"
+        f"<b>المشرف:</b> {mention_html(user.id, html.escape(user.first_name))}\n"
+        f"<b>الملاحظة:</b> {note_name}"
+    )
+
+    msg.reply_text(
+        f"✅ تم حفظ الملاحظة `{note_name}`!",
+        parse_mode=ParseMode.MARKDOWN,
+    )
+
     return logmsg
 
 
@@ -268,19 +357,57 @@ def clear(update: Update, context: CallbackContext) -> str:
         notename = args[0].lower()
 
         if sql.rm_note(chat_id, notename):
-            update.effective_message.reply_text(f"Cleared note '{notename}'.")
+            update.effective_message.reply_text(f"✅ تم حذف الملاحظة '{notename}'.")
             logmsg = (
                     f"<b>{html.escape(chat.title)}:</b>\n"
-                    f"#CLEARNOTE\n"
-                    f"<b>Admin:</b> {mention_html(user.id, html.escape(user.first_name))}\n"
-                    f"<b>Note:</b> {notename}"
+                    f"#حذف_ملاحظة\n"
+                    f"<b>المشرف:</b> {mention_html(user.id, html.escape(user.first_name))}\n"
+                    f"<b>الملاحظة:</b> {notename}"
             )
             return logmsg
         else:
-            update.effective_message.reply_text("That's not a note in my database!")
+            update.effective_message.reply_text("⚠️ هذي الملاحظة مش موجودة عندي!")
             return ''
     else:
-        update.effective_message.reply_text("Provide a notename.")
+        update.effective_message.reply_text("⚠️ حدد اسم الملاحظة!")
+        return ''
+
+
+# ==================== معالج عربي لحذف الملاحظة ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_CLEAR_COMMANDS) + r')(\s|$)'), group=3)
+@spamcheck
+@connection_status
+@user_admin_check(AdminPerms.CAN_CHANGE_INFO, allow_mods=True)
+@loggable
+def arabic_clear(update: Update, context: CallbackContext) -> str:
+    message = update.effective_message
+    chat = update.effective_chat
+    chat_id = chat.id
+    user = update.effective_user
+
+    text = message.text
+    for cmd in ARABIC_CLEAR_COMMANDS:
+        if text.startswith(cmd):
+            text = text[len(cmd):].strip()
+            break
+    
+    if text:
+        notename = text.split()[0].lower()
+
+        if sql.rm_note(chat_id, notename):
+            message.reply_text(f"✅ تم حذف الملاحظة '{notename}'.")
+            logmsg = (
+                    f"<b>{html.escape(chat.title)}:</b>\n"
+                    f"#حذف_ملاحظة\n"
+                    f"<b>المشرف:</b> {mention_html(user.id, html.escape(user.first_name))}\n"
+                    f"<b>الملاحظة:</b> {notename}"
+            )
+            return logmsg
+        else:
+            message.reply_text("⚠️ هذي الملاحظة مش موجودة عندي!")
+            return ''
+    else:
+        message.reply_text("⚠️ حدد اسم الملاحظة!")
         return ''
 
 
@@ -292,21 +419,50 @@ def clearall(update: Update, _: CallbackContext):
     member = chat.get_member(user.id)
     if member.status != "creator" and user.id not in SUDO_USERS:
         update.effective_message.reply_text(
-            "Only the chat owner can clear all notes at once."
+            "⚠️ بس مالك المجموعة يقدر يمسح كل الملاحظات مرة وحدة."
         )
     else:
         buttons = InlineKeyboardMarkup(
             [
                 [
                     InlineKeyboardButton(
-                        text="Delete all notes", callback_data="notes_rmall"
+                        text="🗑 حذف كل الملاحظات", callback_data="notes_rmall"
                     )
                 ],
-                [InlineKeyboardButton(text="Cancel", callback_data="notes_cancel")],
+                [InlineKeyboardButton(text="❌ إلغاء", callback_data="notes_cancel")],
             ]
         )
         update.effective_message.reply_text(
-            f"Are you sure you would like to clear ALL notes in {chat.title}? This action cannot be undone.",
+            f"⚠️ هل أنت متأكد تبي تحذف كل الملاحظات في {chat.title}؟ هالعملية ما تقدر تتراجع عنها!",
+            reply_markup=buttons,
+            parse_mode=ParseMode.MARKDOWN,
+        )
+
+
+# ==================== معالج عربي لحذف كل الملاحظات ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_CLEARALL_COMMANDS) + r')$'), group=3)
+@spamcheck
+def arabic_clearall(update: Update, _: CallbackContext):
+    chat = update.effective_chat
+    user = update.effective_user
+    member = chat.get_member(user.id)
+    if member.status != "creator" and user.id not in SUDO_USERS:
+        update.effective_message.reply_text(
+            "⚠️ بس مالك المجموعة يقدر يمسح كل الملاحظات مرة وحدة."
+        )
+    else:
+        buttons = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        text="🗑 حذف كل الملاحظات", callback_data="notes_rmall"
+                    )
+                ],
+                [InlineKeyboardButton(text="❌ إلغاء", callback_data="notes_cancel")],
+            ]
+        )
+        update.effective_message.reply_text(
+            f"⚠️ هل أنت متأكد تبي تحذف كل الملاحظات في {chat.title}؟ هالعملية ما تقدر تتراجع عنها!",
             reply_markup=buttons,
             parse_mode=ParseMode.MARKDOWN,
         )
@@ -327,12 +483,12 @@ def clearall_btn(update: Update, _: CallbackContext) -> str:
                 for notename in note_list:
                     note = notename.name.lower()
                     sql.rm_note(chat.id, note)
-                message.edit_text("Deleted all notes.")
+                message.edit_text("✅ تم حذف كل الملاحظات!")
 
                 log_message = (
                     f"<b>{html.escape(chat.title)}:</b>\n"
-                    f"#CLEAREDALLNOTES\n"
-                    f"<b>Admin:</b> {mention_html(user.id, html.escape(user.first_name))}"
+                    f"#حذف_كل_الملاحظات\n"
+                    f"<b>المشرف:</b> {mention_html(user.id, html.escape(user.first_name))}"
                 )
                 return log_message
 
@@ -340,21 +496,21 @@ def clearall_btn(update: Update, _: CallbackContext) -> str:
                 return ""
 
         if member.status == "administrator":
-            query.answer("Only owner of the chat can do this.")
+            query.answer("⚠️ بس مالك المجموعة يقدر يسوي هالشي.")
             return ""
 
         if member.status == "member":
-            query.answer("You need to be admin to do this.")
+            query.answer("⚠️ لازم تكون مشرف باش تسوي هالشي.")
             return ""
     elif query.data == "notes_cancel":
         if member.status == "creator" or query.from_user.id in SUDO_USERS:
-            message.edit_text("Clearing of all notes has been cancelled.")
+            message.edit_text("❌ تم إلغاء حذف الملاحظات.")
             return ""
         if member.status == "administrator":
-            query.answer("Only owner of the chat can do this.")
+            query.answer("⚠️ بس مالك المجموعة يقدر يسوي هالشي.")
             return ""
         if member.status == "member":
-            query.answer("You need to be admin to do this.")
+            query.answer("⚠️ لازم تكون مشرف باش تسوي هالشي.")
             return ""
 
 
@@ -365,7 +521,7 @@ def list_notes(update: Update, _: CallbackContext):
     chat_id = update.effective_chat.id
     note_list = sql.get_all_chat_notes(chat_id)
     notes = len(note_list) + 1
-    msg = "Get note by `/notenumber` or `#notename` \n\n  *ID*    *Note* \n"
+    msg = "📝 جيب الملاحظة بـ `/رقم` أو `#اسم_الملاحظة` \n\n  *الرقم*    *الملاحظة* \n"
     for note_id, note in zip(range(1, notes), note_list):
         if note_id < 10:
             note_name = f"`{note_id:2}.`  `#{(note.name.lower())}`\n"
@@ -376,7 +532,32 @@ def list_notes(update: Update, _: CallbackContext):
             msg = ""
         msg += note_name
     if not note_list:
-        update.effective_message.reply_text("No notes in this chat!")
+        update.effective_message.reply_text("📭 ما في ملاحظات في هالمجموعة!")
+
+    elif msg != '':
+        update.effective_message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+
+
+# ==================== معالج عربي لعرض الملاحظات ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_NOTES_COMMANDS) + r')$'), group=3)
+@spamcheck
+@connection_status
+def arabic_list_notes(update: Update, _: CallbackContext):
+    chat_id = update.effective_chat.id
+    note_list = sql.get_all_chat_notes(chat_id)
+    notes = len(note_list) + 1
+    msg = "📝 جيب الملاحظة بـ `/رقم` أو `#اسم_الملاحظة` \n\n  *الرقم*    *الملاحظة* \n"
+    for note_id, note in zip(range(1, notes), note_list):
+        if note_id < 10:
+            note_name = f"`{note_id:2}.`  `#{(note.name.lower())}`\n"
+        else:
+            note_name = f"`{note_id}.`  `#{(note.name.lower())}`\n"
+        if len(msg) + len(note_name) > MAX_MESSAGE_LENGTH:
+            update.effective_message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+            msg = ""
+        msg += note_name
+    if not note_list:
+        update.effective_message.reply_text("📭 ما في ملاحظات في هالمجموعة!")
 
     elif msg != '':
         update.effective_message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
@@ -474,14 +655,13 @@ def __import_data__(chat_id, data):  # sourcery no-metrics
                 chat_id,
                 document=output,
                 filename="failed_imports.txt",
-                caption="These files/photos failed to import due to originating "
-                "from another bot. This is a telegram API restriction, and can't "
-                "be avoided. Sorry for the inconvenience!",
+                caption="⚠️ هالملفات/الصور ما قدرت تتستورد لأنها جاية من بوت ثاني. "
+                "هذا قيد من تيليجرام، وما نقدر نتجاوزه. معذرة على الإزعاج!",
             )
 
 
 def __stats__():
-    return f"• {sql.num_notes()} notes, across {sql.num_chats()} chats."
+    return f"• {sql.num_notes()} ملاحظة، في {sql.num_chats()} مجموعة."
 
 
 def __migrate__(old_chat_id, new_chat_id):
@@ -490,7 +670,7 @@ def __migrate__(old_chat_id, new_chat_id):
 
 def __chat_settings__(chat_id, _):
     notes = sql.get_all_chat_notes(chat_id)
-    return f"There are `{len(notes)}` notes in this chat."
+    return f"في `{len(notes)}` ملاحظة في هالمجموعة."
 
 
 from .language import gs
@@ -500,4 +680,4 @@ def get_help(chat):
     return gs(chat, "notes_help")
 
 
-__mod_name__ = "Notes"
+__mod_name__ = "الملاحظات"
