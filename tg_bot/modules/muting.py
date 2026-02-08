@@ -41,33 +41,33 @@ from .helper_funcs.admin_status import (
 
 def check_user(user_id: int, bot: Bot, update: Update) -> Optional[str]:
     if not user_id:
-        return "You don't seem to be referring to a user or the ID specified is incorrect.."
+        return "ما لقيت المستخدم اللي تقصده، تأكد من الآيدي أو رد على رسالته 🤔"
 
     try:
         member = update.effective_chat.get_member(user_id)
     except BadRequest as excp:
         if excp.message == 'User not found':
-            return "I can't seem to find this user"
+            return "ما لقيتش هذا المستخدم! 🔍"
         else:
             raise
     if user_id == bot.id:
-        return "I'm not gonna MUTE myself, How high are you?"
+        return "مش بنكتم روحي، انت مجنون؟ 😂"
 
     if user_is_admin(update, user_id) and user_id not in DEV_USERS:
         if user_id == OWNER_ID:
-            return "I'd never ban my owner."
+            return "مستحيل نكتم صاحبي! 👑"
         elif user_id in DEV_USERS:
-            return "I can't act against our own."
+            return "ما نقدرش نتصرف ضد المطورين حقي! 👨‍💻"
         elif user_id in SUDO_USERS:
-            return "My sudos are ban immune"
+            return "السودو حقي محميين من الكتم! 🛡️"
         elif user_id in SUPPORT_USERS:
-            return "My support users are ban immune"
+            return "فريق الدعم حقي محميين من الكتم! 💪"
         elif user_id in WHITELIST_USERS:
-            return "Bring an order from My Devs to fight a Whitelist user."
+            return "جيب أمر من المطورين باش نتعامل مع القائمة البيضاء! 📋"
         elif user_id in MOD_USERS:
-            return "Moderators cannot be muted, report abuse at @TheBotsSupport."
+            return "المشرفين ما ينكتموش! 🛡️"
         else:
-            return "Can't. Find someone else to mute but not this one."
+            return "ما نقدرش. لقى واحد ثاني تكتمه مش هذا! 🤷"
 
     return None
 
@@ -101,8 +101,8 @@ def mute(update: Update, context: CallbackContext) -> str:
                 message.reply_to_message.delete()
             else:
                 update.effective_message.reply_text(
-                    f"I can't perform this action due to missing permissions;\n"
-                    f"Make sure i am an admin and {AdminPerms.CAN_DELETE_MESSAGES.name.lower().replace('is_', 'am ').replace('_', ' ')}!")
+                    f"ما نقدرش نسوي هذا لأني ما عنديش الصلاحيات؛\n"
+                    f"تأكد إني مشرف وعندي صلاحية حذف الرسائل! 🔐")
                 return
         else:
             return u_na_errmsg(message, AdminPerms.CAN_DELETE_MESSAGES)
@@ -111,29 +111,29 @@ def mute(update: Update, context: CallbackContext) -> str:
 
     log = (
         f"<b>{html.escape(chat.title)}:</b>\n"
-        f"#MUTE\n"
-        f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-        f"<b>User:</b> {mention_html(member.user.id, member.user.first_name)}"
+        f"#كتم\n"
+        f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+        f"<b>المستخدم:</b> {mention_html(member.user.id, member.user.first_name)}"
     )
 
     if reason:
-        log += f"\n<b>Reason:</b> {reason}"
+        log += f"\n<b>السبب:</b> {reason}"
 
     if member.can_send_messages is None or member.can_send_messages:
         chat_permissions = ChatPermissions(can_send_messages=False)
         bot.restrict_chat_member(chat.id, user_id, chat_permissions)
-        mutemsg = "{} was muted by {} in <b>{}</b>".format(
+        mutemsg = "🔇 {} تم كتمه من طرف {} في <b>{}</b>".format(
                     mention_html(member.user.id, member.user.first_name), user.first_name, message.chat.title
         )
         if reason:
-            mutemsg += f"\n<b>Reason</b>: <code>{reason}</code>"
+            mutemsg += f"\n<b>السبب</b>: <code>{reason}</code>"
 
 
         keyboard = InlineKeyboardMarkup(
             [
                 [
                     InlineKeyboardButton(
-                        "🔊 Unmute", callback_data="cb_unmute({})".format(user_id)
+                        "🔊 فك الكتم", callback_data="cb_unmute({})".format(user_id)
                     )
                 ]
             ]
@@ -150,7 +150,7 @@ def mute(update: Update, context: CallbackContext) -> str:
         return log
 
     else:
-        message.reply_text("This user is already muted!")
+        message.reply_text("هذا المستخدم مكتوم أصلاً! 🔇")
 
     return ""
 
@@ -173,8 +173,7 @@ def button(update: Update, context: CallbackContext) -> str:
 
         if user_member.status in ["kicked", "left"]:
             user_member.reply_text(
-                "This user isn't even in the chat, unmuting them won't make them talk more than they "
-                "already do!"
+                "هذا المستخدم مش في القروب أصلاً، فك كتمه مش بيخليه يحكي أكثر! 🤷"
             )
 
         elif (
@@ -183,7 +182,7 @@ def button(update: Update, context: CallbackContext) -> str:
                 and user_member.can_send_other_messages
                 and user_member.can_add_web_page_previews
             ):
-            update.effective_message.edit_text("This user already has the right to speak.")
+            update.effective_message.edit_text("هذا المستخدم عنده صلاحية الكلام أصلاً! 🗣️")
         else:
             chat_permissions = ChatPermissions(
                 can_send_messages=True,
@@ -201,17 +200,17 @@ def button(update: Update, context: CallbackContext) -> str:
                 pass
 
             update.effective_message.edit_text(
-                "{} was unmuted by {}.".format(mention_html(user_id, user_member.user.first_name), user.first_name),
+                "🔊 {} تم فك كتمه من طرف {}.".format(mention_html(user_id, user_member.user.first_name), user.first_name),
                 parse_mode=ParseMode.HTML,
             )
             return (
                 f"<b>{html.escape(chat.title)}:</b>\n"
-                f"#UNMUTE\n"
-                f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-                f"<b>User:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
+                f"#فك_كتم\n"
+                f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+                f"<b>المستخدم:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
             )
     else:
-        query.answer("this is only for admins")
+        query.answer("❌ هذا للمشرفين بس!")
 
 
 @kigcmd(command='unmute')
@@ -230,7 +229,7 @@ def unmute(update: Update, context: CallbackContext) -> str:
     user_id, reason = extract_user_and_text(message, args)
     if not user_id:
         message.reply_text(
-            "You'll need to either give me a username to unmute, or reply to someone to be unmuted."
+            "لازم تعطيني يوزرنيم باش نفك كتمه، أو رد على رسالته! 🤔"
         )
         return ""
 
@@ -238,8 +237,7 @@ def unmute(update: Update, context: CallbackContext) -> str:
 
     if member.status in ["kicked", "left"]:
         message.reply_text(
-            "This user isn't even in the chat, unmuting them won't make them talk more than they "
-            "already do!"
+            "هذا المستخدم مش في القروب أصلاً، فك كتمه مش بيخليه يحكي أكثر! 🤷"
         )
 
     elif (
@@ -248,7 +246,7 @@ def unmute(update: Update, context: CallbackContext) -> str:
             and member.can_send_other_messages
             and member.can_add_web_page_previews
     ):
-        message.reply_text("This user already has the right to speak.")
+        message.reply_text("هذا المستخدم عنده صلاحية الكلام أصلاً! 🗣️")
     else:
         chat_permissions = ChatPermissions(
             can_send_messages=True,
@@ -264,11 +262,11 @@ def unmute(update: Update, context: CallbackContext) -> str:
             bot.restrict_chat_member(chat.id, int(user_id), chat_permissions)
         except BadRequest:
             pass
-        unmutemsg = "{} was unmuted by {} in <b>{}</b>".format(
+        unmutemsg = "🔊 {} تم فك كتمه من طرف {} في <b>{}</b>".format(
             mention_html(member.user.id, member.user.first_name), user.first_name, message.chat.title
         )
         if reason:
-            unmutemsg += "\n<b>Reason</b>: <code>{}</code>".format(reason)
+            unmutemsg += "\n<b>السبب</b>: <code>{}</code>".format(reason)
         bot.sendMessage(
         chat.id,
        unmutemsg,
@@ -276,9 +274,9 @@ def unmute(update: Update, context: CallbackContext) -> str:
         )
         return (
             f"<b>{html.escape(chat.title)}:</b>\n"
-            f"#UNMUTE\n"
-            f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-            f"<b>User:</b> {mention_html(member.user.id, member.user.first_name)}"
+            f"#فك_كتم\n"
+            f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+            f"<b>المستخدم:</b> {mention_html(member.user.id, member.user.first_name)}"
         )
     return ""
 
@@ -306,7 +304,7 @@ def temp_mute(update: Update, context: CallbackContext) -> str:
     member = chat.get_member(user_id)
 
     if not reason:
-        message.reply_text("You haven't specified a time to mute this user for!")
+        message.reply_text("ما حددتش وقت الكتم! ⏰")
         return ""
 
     split_reason = reason.split(None, 1)
@@ -320,13 +318,13 @@ def temp_mute(update: Update, context: CallbackContext) -> str:
 
     log = (
         f"<b>{html.escape(chat.title)}:</b>\n"
-        f"#TEMP MUTED\n"
-        f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-        f"<b>User:</b> {mention_html(member.user.id, member.user.first_name)}\n"
-        f"<b>Time:</b> {time_val}"
+        f"#كتم_مؤقت\n"
+        f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+        f"<b>المستخدم:</b> {mention_html(member.user.id, member.user.first_name)}\n"
+        f"<b>المدة:</b> {time_val}"
     )
     if reason:
-        log += f"\n<b>Reason:</b> {reason}"
+        log += f"\n<b>السبب:</b> {reason}"
 
     try:
         if member.can_send_messages is None or member.can_send_messages:
@@ -336,28 +334,27 @@ def temp_mute(update: Update, context: CallbackContext) -> str:
             )
             bot.sendMessage(
                 chat.id,
-                f"Muted <b>{html.escape(member.user.first_name)}</b> for {time_val}!\n<b>Reason</b>: <code>{reason}</code>",
+                f"🔇 تم كتم <b>{html.escape(member.user.first_name)}</b> لمدة {time_val}!\n<b>السبب</b>: <code>{reason}</code>",
                 parse_mode=ParseMode.HTML,
             )
             return log
         else:
-            message.reply_text("This user is already muted.")
+            message.reply_text("هذا المستخدم مكتوم أصلاً! 🔇")
 
     except BadRequest as excp:
         if excp.message == "Reply message not found":
-            # Do not reply
-            message.reply_text(f"Muted for {time_val}!", quote=False)
+            message.reply_text(f"🔇 تم الكتم لمدة {time_val}!", quote=False)
             return log
         else:
             log.warning(update)
             log.exception(
-                "ERROR muting user %s in chat %s (%s) due to %s",
+                "خطأ في كتم المستخدم %s في القروب %s (%s) بسبب %s",
                 user_id,
                 chat.title,
                 chat.id,
                 excp.message,
             )
-            message.reply_text("Well damn, I can't mute that user.")
+            message.reply_text("❌ وه! ما قدرتش نكتم هذا المستخدم!")
 
     return ""
 
@@ -366,4 +363,4 @@ def get_help(chat):
     return gs(chat, "muting_help")
 
 
-__mod_name__ = "Muting"
+__mod_name__ = "الكتم 🔇"
