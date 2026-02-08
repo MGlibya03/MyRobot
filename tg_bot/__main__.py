@@ -27,12 +27,32 @@ from tg_bot import (
     CERT_PATH,
     ALLOW_EXCL,
     spamcheck,
-    FORCE_SUB_CHANNEL,
-    check_force_sub
 )
 
+# محاولة استيراد FORCE_SUB_CHANNEL
+try:
+    from tg_bot import FORCE_SUB_CHANNEL, check_force_sub
+except ImportError:
+    FORCE_SUB_CHANNEL = None
+    def check_force_sub(bot, user_id):
+        return True
+
 from tg_bot.modules import ALL_MODULES
-from tg_bot.modules.helper_funcs.chat_status import is_user_admin
+
+# محاولة استيراد is_user_admin من المكان الصحيح
+try:
+    from tg_bot.modules.helper_funcs.chat_status import is_user_admin
+except ImportError:
+    try:
+        from tg_bot.modules.helper_funcs.admin_status import user_is_admin as is_user_admin
+    except ImportError:
+        def is_user_admin(chat, user_id):
+            try:
+                member = chat.get_member(user_id)
+                return member.status in ['administrator', 'creator']
+            except:
+                return False
+
 from tg_bot.modules.helper_funcs.misc import paginate_modules
 
 
@@ -242,7 +262,6 @@ SMART_REPLIES = {
     "شن": "شن تبي يا غالي؟ 🤔",
     "شنو": "شنو تبي؟ قول 🤔",
     "ليش": "ليش؟ في حاجة؟ 🤔",
-    "علاش": "علاش؟ قولي 🤔",
     "متى": "قريب ان شاء الله ⏰",
     "كم": "واحد زيك 😂",
     "مين": "مين يكون؟ 🤔",
@@ -283,18 +302,18 @@ def start(update: Update, context: CallbackContext):
     args = context.args
     
     if chat.type == "private":
-        if len(args) >= 1:
+        if args and len(args) >= 1:
             if args[0].lower() == "help":
                 send_help(chat.id, HELP_STRINGS)
                 return
             elif args[0].lower().startswith("stngs_"):
                 match = re.match("stngs_(.*)", args[0].lower())
-                chat_obj = dispatcher.bot.getChat(match.group(1))
-
-                if is_user_admin(chat_obj, user.id):
-                    send_settings(match.group(1), user.id, False)
-                else:
-                    send_settings(match.group(1), user.id, True)
+                if match:
+                    chat_obj = dispatcher.bot.getChat(match.group(1))
+                    if is_user_admin(chat_obj, user.id):
+                        send_settings(match.group(1), user.id, False)
+                    else:
+                        send_settings(match.group(1), user.id, True)
                     
             elif args[0][1:].isdigit() and "rules" in IMPORTED:
                 IMPORTED["rules"].send_rules(update, args[0], from_pm=True)
@@ -446,7 +465,7 @@ def help_command(update: Update, context: CallbackContext):
         )
         return
 
-    elif len(args) >= 1:
+    elif args and len(args) >= 1:
         module = args[0].lower()
         if module in HELPABLE:
             help_text = HELPABLE[module].__help__
@@ -733,8 +752,8 @@ def migrate_chats(update: Update, context: CallbackContext):
 
 def main():
     
-    start_handler = CommandHandler("start", start, pass_args=True)
-    help_handler = CommandHandler("help", help_command, pass_args=True)
+    start_handler = CommandHandler("start", start)
+    help_handler = CommandHandler("help", help_command)
     settings_handler = CommandHandler("settings", get_settings)
     donate_handler = CommandHandler("donate", donate)
     migrate_handler = MessageHandler(Filters.status_update.migrate, migrate_chats)
