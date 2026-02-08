@@ -32,7 +32,6 @@ from tg_bot import (
     spamcheck,
 )
 
-# محاولة استيراد FORCE_SUB_CHANNEL
 try:
     from tg_bot import FORCE_SUB_CHANNEL, check_force_sub
 except ImportError:
@@ -42,7 +41,6 @@ except ImportError:
 
 from tg_bot.modules import ALL_MODULES
 
-# محاولة استيراد is_user_admin من المكان الصحيح
 try:
     from tg_bot.modules.helper_funcs.chat_status import is_user_admin
 except ImportError:
@@ -101,7 +99,6 @@ PM_START_TEXT = """
 ✅ حماية من السبام والفلود
 ✅ فلاتر وملاحظات ذكية
 ✅ ترحيب مخصص
-✅ ردود ذكية (إسلامية/تحشيش/رومانسية)
 ✅ دعم كامل للعربي 🇱🇾
 
 💡 اضغط *المساعدة* باش تعرف أوامري!
@@ -172,7 +169,6 @@ for module_name in ALL_MODULES:
 # ═══════════════════════════════════════════════════════════
 
 SMART_REPLIES = {
-    # ردود إسلامية
     "السلام عليكم": "وعليكم السلام ورحمة الله وبركاته 🤍",
     "سلام": "وعليكم السلام يا طيب 💚",
     "الحمد لله": "الله يبارك فيك يا غالي 🤲",
@@ -193,8 +189,6 @@ SMART_REPLIES = {
     "ان شاء الله": "ان شاء الله رب العالمين 🤲",
     "يارب": "اللهم امين 🤲",
     "اللهم امين": "امين يارب العالمين 🤲",
-    
-    # ردود تحشيش ليبية 🇱🇾
     "بوت": "اسمي زورو مش بوت يا زول! انا اذكى منك 😏",
     "يا بوت": "قلتلك اسمي زورو! شكلك ما تفهمش 🙄",
     "غبي": "غبي جدك! انا زورو الذكي يا معلم 😎",
@@ -237,8 +231,6 @@ SMART_REPLIES = {
     "كان": "كان شنو؟ قول 🤔",
     "برشا": "ايه برشا برشا 😂",
     "شوية": "شوية شوية يا غالي 😊",
-    
-    # ردود رومانسية
     "احبك": "وانا نحبك اكثر يا قلبي 💕",
     "بحبك": "وانا نحبك موت 💕",
     "نحبك": "وانا نحبك اكثر منك 💕",
@@ -264,8 +256,6 @@ SMART_REPLIES = {
     "عزيز": "وانت اعز 💚",
     "يا ورد": "انت الورد كله 🌹",
     "يا زين": "زين الباهيين 💕",
-    
-    # ردود عامة
     "شكرا": "يعطيك الصحة يا غالي 💚",
     "مشكور": "العفو يا باهي 💚",
     "عفوا": "ولا يهمك 💚",
@@ -323,7 +313,7 @@ def start(update: Update, context: CallbackContext):
     user = update.effective_user
     bot = context.bot
     args = context.args
-    
+
     if chat.type == "private":
         if args and len(args) >= 1:
             if args[0].lower() == "help":
@@ -337,7 +327,7 @@ def start(update: Update, context: CallbackContext):
                         send_settings(match.group(1), user.id, False)
                     else:
                         send_settings(match.group(1), user.id, True)
-                    
+
             elif args[0][1:].isdigit() and "rules" in IMPORTED:
                 IMPORTED["rules"].send_rules(update, args[0], from_pm=True)
 
@@ -349,9 +339,9 @@ def start(update: Update, context: CallbackContext):
             except:
                 num_users = "مش معروف"
                 num_chats = "مش معروف"
-            
+
             first_name = user.first_name
-            
+
             start_buttons = [
                 [
                     InlineKeyboardButton(text="➕ ضيفني لقروبك", url=f"t.me/{bot.username}?startgroup=true"),
@@ -364,12 +354,12 @@ def start(update: Update, context: CallbackContext):
                     InlineKeyboardButton(text="👨‍💻 المبرمج", url=f"t.me/{OWNER_USERNAME}"),
                 ]
             ]
-            
+
             if FORCE_SUB_CHANNEL:
                 start_buttons.append([
                     InlineKeyboardButton(text="📢 قناة البوت", url=f"t.me/{FORCE_SUB_CHANNEL}")
                 ])
-            
+
             update.effective_message.reply_text(
                 PM_START_TEXT.format(
                     OWNER_USERNAME,
@@ -391,7 +381,7 @@ def zoro_callback(update: Update, context: CallbackContext):
     query = update.callback_query
     user = query.from_user
     bot = context.bot
-    
+
     if query.data == "zoro_about":
         about_text = """
 🤖 *معلومات عن زورو* 🇱🇾
@@ -411,7 +401,7 @@ def zoro_callback(update: Update, context: CallbackContext):
 
 💚 شكراً لاستخدامك زورو!
         """.format(OWNER_USERNAME)
-        
+
         query.message.edit_text(
             about_text,
             parse_mode=ParseMode.MARKDOWN,
@@ -419,7 +409,7 @@ def zoro_callback(update: Update, context: CallbackContext):
                 [InlineKeyboardButton(text="🔙 رجوع", callback_data="zoro_back")]
             ])
         )
-        
+
     elif query.data == "zoro_back":
         try:
             from tg_bot.modules.sql import users_sql
@@ -428,7 +418,7 @@ def zoro_callback(update: Update, context: CallbackContext):
         except:
             num_users = "مش معروف"
             num_chats = "مش معروف"
-        
+
         start_buttons = [
             [
                 InlineKeyboardButton(text="➕ ضيفني لقروبك", url=f"t.me/{bot.username}?startgroup=true"),
@@ -441,12 +431,12 @@ def zoro_callback(update: Update, context: CallbackContext):
                 InlineKeyboardButton(text="👨‍💻 المبرمج", url=f"t.me/{OWNER_USERNAME}"),
             ]
         ]
-        
+
         if FORCE_SUB_CHANNEL:
             start_buttons.append([
                 InlineKeyboardButton(text="📢 قناة البوت", url=f"t.me/{FORCE_SUB_CHANNEL}")
             ])
-        
+
         query.message.edit_text(
             PM_START_TEXT.format(
                 OWNER_USERNAME,
@@ -456,7 +446,7 @@ def zoro_callback(update: Update, context: CallbackContext):
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup(start_buttons)
         )
-    
+
     elif query.data == "check_force_sub":
         if check_force_sub(bot, user.id):
             query.answer("✅ تم التحقق! تقدر تستخدم البوت توا 💚", show_alert=True)
@@ -473,7 +463,7 @@ def zoro_callback(update: Update, context: CallbackContext):
 def help_command(update: Update, context: CallbackContext):
     chat = update.effective_chat
     args = context.args
-    
+
     if chat.type != "private":
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton(text="💡 المساعدة", url=f"t.me/{context.bot.username}?start=help")]
@@ -565,21 +555,36 @@ def help_button(update: Update, context: CallbackContext):
 
 
 # ═══════════════════════════════════════════════════════════
-# دالة الردود الذكية
+# دالة الردود الذكية - مصححة
 # ═══════════════════════════════════════════════════════════
 
 def smart_reply(update: Update, context: CallbackContext):
     message = update.effective_message
-    chat = update.effective_chat
     text = message.text
-    
+
     if not text:
         return
-    
-    text_clean = text.strip().lower()
-    
+
+    if text.startswith('/') or text.startswith('!'):
+        return
+
+    if len(text.strip()) < 2:
+        return
+
+    text_clean = text.strip()
+
+    # مطابقة دقيقة أولاً
     for trigger, response in SMART_REPLIES.items():
-        if trigger in text_clean or text_clean == trigger:
+        if text_clean == trigger:
+            try:
+                message.reply_text(response)
+            except:
+                pass
+            return
+
+    # الكلمة موجودة في النص
+    for trigger, response in SMART_REPLIES.items():
+        if trigger in text_clean:
             try:
                 message.reply_text(response)
             except:
@@ -701,7 +706,7 @@ def get_settings(update: Update, context: CallbackContext):
     chat = update.effective_chat
     user = update.effective_user
     msg = update.effective_message
-    
+
     if chat.type != "private":
         if is_user_admin(chat, user.id):
             text = "اضغط هنا باش تجيب إعدادات هالقروب والإعدادات حقتك."
@@ -717,7 +722,7 @@ def get_settings(update: Update, context: CallbackContext):
         send_settings(chat.id, user.id, True)
 
 
-@spamcheck  
+@spamcheck
 def donate(update: Update, context: CallbackContext):
     update.effective_message.reply_text("شكراً لدعمك يا غالي! 💚🇱🇾")
 
@@ -746,17 +751,17 @@ def migrate_chats(update: Update, context: CallbackContext):
 # ═══════════════════════════════════════════════════════════
 
 def main():
-    
+
     start_handler = CommandHandler("start", start)
     help_handler = CommandHandler("help", help_command)
     settings_handler = CommandHandler("settings", get_settings)
     donate_handler = CommandHandler("donate", donate)
     migrate_handler = MessageHandler(Filters.status_update.migrate, migrate_chats)
-    
+
     help_callback_handler = CallbackQueryHandler(help_button, pattern=r"help_")
     settings_callback_handler = CallbackQueryHandler(settings_button, pattern=r"stngs_")
     zoro_callback_handler = CallbackQueryHandler(zoro_callback, pattern=r"zoro_|check_force_sub")
-    
+
     smart_reply_handler = MessageHandler(
         Filters.text & ~Filters.command & Filters.chat_type.groups,
         smart_reply
@@ -784,7 +789,7 @@ def main():
     else:
         log.info("زورو شغال بـ long polling... 🇱🇾")
         updater.start_polling(timeout=15, read_latency=4, drop_pending_updates=True)
-    
+
     telethn.start(bot_token=TOKEN)
     telethn.run_until_disconnected()
     updater.idle()
