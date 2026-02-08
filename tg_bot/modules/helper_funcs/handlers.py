@@ -58,17 +58,14 @@ class CustomCommandHandler(tg.Handler):
     def __init__(self, command, callback, run_async=True, **kwargs):
         super().__init__(callback, run_async=run_async)
         
-        # تحويل الأمر لقائمة لو كان string
         if isinstance(command, str):
             self.command = [command.lower()]
         else:
             self.command = [cmd.lower() for cmd in command]
         
-        # إزالة admin_ok لو موجود
         if "admin_ok" in kwargs:
             del kwargs["admin_ok"]
         
-        # الفلاتر
         self.filters = kwargs.get('filters', Filters.all)
 
     def check_update(self, update):
@@ -85,24 +82,20 @@ class CustomCommandHandler(tg.Handler):
         if message.text and len(message.text) > 1:
             fst_word = message.text.split(None, 1)[0]
             
-            # التحقق من بداية الأمر
             if len(fst_word) > 1 and any(fst_word.startswith(start) for start in CMD_STARTERS):
                 args = message.text.split()[1:]
                 command = fst_word[1:].split("@")
                 command.append(message.bot.username)
 
-                # التحقق من الأمر
                 if not (
                     command[0].lower() in self.command
                     and command[1].lower() == message.bot.username.lower()
                 ):
                     return None
 
-                # فحص السبام
                 if SpamChecker.check_user(user_id):
                     return None
 
-                # فحص الفلاتر
                 if callable(self.filters):
                     filter_result = self.filters(update)
                 else:
