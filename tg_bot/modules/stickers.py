@@ -8,9 +8,14 @@ from urllib.error import HTTPError
 from PIL import Image
 from telegram import (Bot, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode,
                       TelegramError, Update)
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, Filters
 from telegram.utils.helpers import mention_html
-from .helper_funcs.decorators import kigcmd
+from .helper_funcs.decorators import kigcmd, kigmsg
+
+# ==================== الأوامر العربية ====================
+ARABIC_STICKERID_COMMANDS = ["ايدي_الملصق", "رقم_الملصق", "معرف_الملصق"]
+ARABIC_GETSTICKER_COMMANDS = ["جيب_الملصق", "احصل_على_الملصق", "تنزيل_الملصق"]
+ARABIC_KANG_COMMANDS = ["سرقة", "سرق", "اسرق", "كانق"]
 
 
 def get_sticker_count(bot: Bot, packname: str) -> int:
@@ -29,18 +34,39 @@ def stickerid(update: Update, context: CallbackContext):
     msg = update.effective_message
     if msg.reply_to_message and msg.reply_to_message.sticker:
         update.effective_message.reply_text(
-            "Hello "
+            "مرحباً "
             + f"{mention_html(msg.from_user.id, msg.from_user.first_name)}"
-            + ", The sticker id you are replying is :\n <code>"
+            + "، آيدي الملصق اللي رديت عليه:\n <code>"
             + escape(msg.reply_to_message.sticker.file_id)
             + "</code>",
             parse_mode=ParseMode.HTML,
         )
     else:
         update.effective_message.reply_text(
-            "Hello "
+            "مرحباً "
             + f"{mention_html(msg.from_user.id, msg.from_user.first_name)}"
-            + ", Please reply to sticker message to get id sticker",
+            + "، رد على ملصق باش تجيب آيديه!",
+            parse_mode=ParseMode.HTML,
+        )
+
+
+# ==================== معالج عربي لآيدي الملصق ====================
+@kigmsg(Filters.regex(r'^(' + '|'.join(ARABIC_STICKERID_COMMANDS) + r')$'), group=3)
+@spamcheck
+def arabic_stickerid(update: Update, context: CallbackContext):
+    msg = update.effective_message
+    if msg.reply_to_message and msg.reply_to_message.sticker:
+        update.effective_message.reply_text(
+            "مرحباً "
+            + f"{mention_html(msg.from_user.id, msg.from_user.first_name)}"
+            + "، آيدي الملصق اللي رديت عليه:\n <code>"
+            + escape(msg.reply_to_message.sticker.file_id)
+            + "</code>",
+            parse_mode=ParseMode.HTML,
+        )
+    else:
+        update.effective_message.reply_text(
+            "⚠️ رد على ملصق باش تجيب آيديه!",
             parse_mode=ParseMode.HTML,
         )
 
@@ -69,7 +95,33 @@ def getsticker(update: Update, context: CallbackContext):
         )
     else:
         update.effective_message.reply_text(
-            "Please reply to a sticker for me to upload its PNG."
+            "⚠️ رد على ملصق باش أحمّله لك كصورة PNG!"
+        )
+
+
+# ==================== معالج عربي لتحميل الملصق ====================
+@kigmsg(Filters.regex(r'^(' + '|'.join(ARABIC_GETSTICKER_COMMANDS) + r')$'), group=3)
+@spamcheck
+def arabic_getsticker(update: Update, context: CallbackContext):
+    msg = update.effective_message
+    if msg.reply_to_message and msg.reply_to_message.sticker:
+        file_id = msg.reply_to_message.sticker.file_id
+        is_animated = msg.reply_to_message.sticker.is_animated
+        bot = context.bot
+        new_file = bot.get_file(file_id)
+        sticker_data = new_file.download(out=BytesIO())
+        sticker_data.seek(0)
+        filename = "animated_sticker.tgs.rename_me" if is_animated else "sticker.png"
+        chat_id = update.effective_chat.id
+        bot.send_document(chat_id,
+            document=sticker_data,
+            filename=filename,
+            caption="📥 تفضل الملصق كملف!",
+            disable_content_type_detection=True
+        )
+    else:
+        update.effective_message.reply_text(
+            "⚠️ رد على ملصق باش أحمّله لك كملف!"
         )
 
 
@@ -110,16 +162,16 @@ def kang(update: Update, context: CallbackContext):  # sourcery no-metrics
                     packnum += 1
                     if is_animated:
                         packname = f"animated{packnum}_{user.id}_by_{context.bot.username}"
-                        ppref = "animated"
+                        ppref = "متحرك"
                     elif is_video:
                         packname = f"vid{packnum}_{user.id}_by_{context.bot.username}"
-                        ppref = "vid"
+                        ppref = "فيديو"
                     else:
                         packname = f"a{packnum}_{user.id}_by_{context.bot.username}"
                         ppref = ""
                 else:
                     last_set = True
-                packs += f"[{ppref}pack{packnum if packnum != 0 else ''}](t.me/addstickers/{packname})\n"
+                packs += f"[{ppref}حزمة{packnum if packnum != 0 else ''}](t.me/addstickers/{packname})\n"
             except TelegramError as e:
                 if e.message == "Stickerset_invalid":
                     last_set = True
@@ -143,9 +195,9 @@ def kang(update: Update, context: CallbackContext):  # sourcery no-metrics
 
         # if they have no packs, change our message
         if not packs:
-            packs = "Looks like you don't have any packs! Please reply to a sticker, or image to kang it and create a new pack!"
+            packs = "⚠️ يبدو إنك ما عندك أي حزم ملصقات! رد على ملصق أو صورة باش تسرقه وتسوي حزمة جديدة!"
         else:
-            packs = "Please reply to a sticker, or image to kang it!\nOh, by the way, here are your packs:\n" + packs
+            packs = "📦 رد على ملصق أو صورة باش تسرقه!\n\nحزمك الحالية:\n" + packs
 
         # Send our list as a reply
         msg.reply_text(packs, parse_mode=ParseMode.MARKDOWN)
@@ -174,7 +226,7 @@ def kang(update: Update, context: CallbackContext):  # sourcery no-metrics
             if doc.mime_type == 'video/webm':
                 is_video = True
         else:
-            msg.reply_text("Yea, I can't steal that.")
+            msg.reply_text("⚠️ ما أقدر أسرق هالشي!")
             return
 
         # Check if they have an emoji specified.
@@ -200,7 +252,7 @@ def kang(update: Update, context: CallbackContext):  # sourcery no-metrics
             # check the mime-type first, you can't kang a .html file.
             mime = resp.getheader('Content-Type')
             if mime not in ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/x-tgsticker']:
-                msg.reply_text("I can only kang images m8.")
+                msg.reply_text("⚠️ أنا أقدر أسرق صور بس!")
                 return
 
             # check if it's an animated sticker type
@@ -212,11 +264,11 @@ def kang(update: Update, context: CallbackContext):  # sourcery no-metrics
             sticker_data.seek(0)
         except ValueError:
             # If they gave an invalid URL
-            msg.reply_text("Yea, that's not a URL I can download from.")
+            msg.reply_text("⚠️ هذا مش رابط أقدر أحمّل منه!")
             return
         except HTTPError as e:
             # if we're not allowed there for some reason
-            msg.reply_text(f"Error downloading the file: {e.code} {e.msg}")
+            msg.reply_text(f"⚠️ خطأ في تحميل الملف: {e.code} {e.msg}")
             return
 
     packnum = 0
@@ -284,7 +336,7 @@ def kang(update: Update, context: CallbackContext):  # sourcery no-metrics
             # seek to start of the image data
             sticker_data.seek(0)
         except OSError as e:
-            msg.reply_text("I can only steal images m8.")
+            msg.reply_text("⚠️ أنا أقدر أسرق صور بس!")
             return
 
     # actually add the damn sticker to the pack, animated or not.
@@ -303,8 +355,8 @@ def kang(update: Update, context: CallbackContext):  # sourcery no-metrics
             emojis=sticker_emoji,
         )
         msg.reply_text(
-            f"Sticker successfully added to [pack](t.me/addstickers/{packname})"
-            + f"\nEmoji is: {sticker_emoji}",
+            f"✅ تم سرقة الملصق ووضعه في [الحزمة](t.me/addstickers/{packname})"
+            + f"\nالإيموجي: {sticker_emoji}",
             parse_mode=ParseMode.MARKDOWN,
         )
     except TelegramError as e:
@@ -324,24 +376,46 @@ def kang(update: Update, context: CallbackContext):  # sourcery no-metrics
                 png_sticker=sticker_data if not is_animated and not is_video else None,
             )
         elif e.message == "Stickers_too_much":
-            msg.reply_text("Max packsize reached. Press F to pay respecc.")
+            msg.reply_text("⚠️ وصلت الحد الأقصى للحزمة. سوّي حزمة جديدة!")
         elif e.message == "Invalid sticker emojis":
-            msg.reply_text("I can't kang with that emoji!")
+            msg.reply_text("⚠️ ما أقدر أسرق بهالإيموجي!")
         elif e.message == "Sticker_video_nowebm":
             msg.reply_text(
-                "This media format isn't supported, I need it in a webm format, "
-                "[see this guide](https://core.telegram.org/stickers/webm-vp9-encoding).",
+                "⚠️ هالصيغة مش مدعومة، لازم يكون webm، "
+                "[شوف الدليل هذا](https://core.telegram.org/stickers/webm-vp9-encoding).",
                 parse_mode=ParseMode.MARKDOWN,
                 disable_web_page_preview = True,
             )
         elif e.message == "Internal Server Error: sticker set not found (500)":
             msg.reply_text(
-                f"Sticker successfully added to [pack](t.me/addstickers/{packname})\n"
-                + f"Emoji is: {sticker_emoji}", parse_mode=ParseMode.MARKDOWN
+                f"✅ تم سرقة الملصق ووضعه في [الحزمة](t.me/addstickers/{packname})\n"
+                + f"الإيموجي: {sticker_emoji}", parse_mode=ParseMode.MARKDOWN
             )
         else:
-            msg.reply_text(f"Oops! looks like something happened that shouldn't happen! ({e.message})")
+            msg.reply_text(f"⚠️ حصل شي ما كان المفروض يصير! ({e.message})")
             raise
+
+
+# ==================== معالج عربي للسرقة ====================
+@kigmsg(Filters.regex(r'^(' + '|'.join(ARABIC_KANG_COMMANDS) + r')(\s|$)'), group=3)
+@spamcheck
+def arabic_kang(update: Update, context: CallbackContext):
+    # استدعاء نفس دالة kang لكن نتأكد من الرد
+    msg = update.effective_message
+    
+    if not msg.reply_to_message:
+        msg.reply_text(
+            "⚠️ رد على ملصق أو صورة باش تسرقه!\n\n"
+            "مثال:\n"
+            "• رد على ملصق واكتب: `سرقة`\n"
+            "• أو: `سرقة 😂` لتغيير الإيموجي",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+    
+    # استدعاء الدالة الأصلية
+    kang(update, context)
+
 
 def makepack_internal(
     update,
@@ -360,10 +434,13 @@ def makepack_internal(
         extra_version = ""
         if packnum > 0:
             extra_version = f" {packnum}"
+        
+        pack_type = "متحركة " if tgs_sticker else "فيديو " if webm_sticker else ""
+        
         success = context.bot.create_new_sticker_set(
             user.id,
             packname,
-            f"{name}s {'animated ' if tgs_sticker else 'video ' if webm_sticker else ''}kang pack{extra_version}",
+            f"حزمة {name} {pack_type}المسروقة{extra_version}",
             tgs_sticker=tgs_sticker or None,
             webm_sticker=webm_sticker or None,
             png_sticker=png_sticker or None,
@@ -374,7 +451,7 @@ def makepack_internal(
         print(e)
         if e.message == 'Sticker set name is already occupied':
             msg.reply_text(
-                'Your pack can be found [here](t.me/addstickers/%s)'
+                '✅ حزمتك موجودة [هنا](t.me/addstickers/%s)'
                 % packname,
                 parse_mode=ParseMode.MARKDOWN,
             )
@@ -382,12 +459,12 @@ def makepack_internal(
             return
         elif e.message in ('Peer_id_invalid', 'bot was blocked by the user'):
             msg.reply_text(
-                'Contact me in PM first.',
+                '⚠️ تواصل معي في الخاص أولاً!',
                 reply_markup=InlineKeyboardMarkup(
                     [
                         [
                             InlineKeyboardButton(
-                                text='Start',
+                                text='ابدأ المحادثة',
                                 url=f't.me/{context.bot.username}',
                             )
                         ]
@@ -403,8 +480,8 @@ def makepack_internal(
             success = True
         elif e.message == 'Sticker_video_nowebm':
             msg.reply_text(
-                "This media format isn't supported, I need it in a webm format, "
-                "[see this guide](https://core.telegram.org/stickers/webm-vp9-encoding).",
+                "⚠️ هالصيغة مش مدعومة، لازم يكون webm، "
+                "[شوف الدليل هذا](https://core.telegram.org/stickers/webm-vp9-encoding).",
                 parse_mode=ParseMode.MARKDOWN,
                 disable_web_page_preview = True,
             )
@@ -413,11 +490,11 @@ def makepack_internal(
             success = False
     if success:
         msg.reply_text(
-            f"Sticker pack successfully created. Get it [here](t.me/addstickers/{packname})",
+            f"✅ تم إنشاء حزمة الملصقات بنجاح! احصل عليها [من هنا](t.me/addstickers/{packname})",
             parse_mode=ParseMode.MARKDOWN,
         )
     else:
-        msg.reply_text("Failed to create sticker pack. Possibly due to blek mejik.")
+        msg.reply_text("⚠️ فشل إنشاء حزمة الملصقات. حاول مرة ثانية!")
 
 
 from .language import gs
@@ -425,4 +502,4 @@ from .language import gs
 def get_help(chat):
     return gs(chat, "stickers_help")
 
-__mod_name__ = "Stickers"
+__mod_name__ = "الملصقات"
