@@ -47,22 +47,22 @@ def fullpromote(update: Update, context: CallbackContext) -> Optional[str]:
 
     if not user_id:
         message.reply_text(
-            "You don't seem to be referring to a user or the ID specified is incorrect.."
+            "ما لقيت المستخدم اللي تقصده، تأكد من الآيدي أو رد على رسالته 🤔"
         )
         return
 
     try:
         user_member = chat.get_member(user_id)
     except Exception as e:
-        message.reply_text(f"Error: {e}")
+        message.reply_text(f"❌ خطأ: {e}")
         return
 
     if user_member.status in ("administrator", "creator"):
-        message.reply_text("This user is already an admin!")
+        message.reply_text("هذا العضو أصلاً مشرف يا باهي! 😅")
         return
 
     if user_id == bot.id:
-        message.reply_text("Yeah, I wish I could promote myself...")
+        message.reply_text("يا ريت نقدر نرقي روحي... بس ما نقدرش 😅")
         return
 
     # set same perms as bot - bot can't assign higher perms than itself!
@@ -87,24 +87,23 @@ def fullpromote(update: Update, context: CallbackContext) -> Optional[str]:
             bot.setChatAdministratorCustomTitle(chat.id, user_id, title)
         bot.sendMessage(
             chat.id,
-            "<b>{}</b> was promoted{} with full perms."
+            "✅ <b>{}</b> تمت ترقيته{} بكل الصلاحيات! 🎉"
                 .format(user_member.user.first_name or user_id,
-                        f" by <b>{message.from_user.first_name}</b>" if not message.sender_chat else ""),
+                        f" من طرف <b>{message.from_user.first_name}</b>" if not message.sender_chat else ""),
             parse_mode=ParseMode.HTML
         )
     except BadRequest as err:
         if err.message == "User_not_mutual_contact":
-            message.reply_text("How am I mean to promote someone who isn't in the group?")
+            message.reply_text("كيف نرقي واحد مش في القروب؟ 🤔")
         else:
-            message.reply_text("An error occurred while promoting.")
+            message.reply_text("❌ صار خطأ وقت الترقية!")
         return
 
     log_message = (
         f"<b>{html.escape(chat.title)}:</b>\n"
-        f"#PROMOTED\n"
-        f"Full promote\n"
-        f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-        f"<b>User:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
+        f"#ترقية_كاملة\n"
+        f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+        f"<b>العضو:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
     )
 
     return log_message
@@ -127,22 +126,22 @@ def promote(update: Update, context: CallbackContext) -> Optional[str]:
 
     if not user_id:
         message.reply_text(
-            "You don't seem to be referring to a user or the ID specified is incorrect.."
+            "ما لقيت المستخدم اللي تقصده، تأكد من الآيدي أو رد على رسالته 🤔"
         )
         return
 
     try:
         user_member = chat.get_member(user_id)
     except Exception as e:
-        message.reply_text(f"Error: {e}")
+        message.reply_text(f"❌ خطأ: {e}")
         return
 
     if user_member.status in ("administrator", "creator"):
-        message.reply_text("This user is already an admin!")
+        message.reply_text("هذا العضو أصلاً مشرف يا باهي! 😅")
         return
 
     if user_id == bot.id:
-        message.reply_text("Yeah I wish I could promote myself...")
+        message.reply_text("يا ريت نقدر نرقي روحي... بس ما نقدرش 😅")
         return
 
     # set same perms as bot - bot can't assign higher perms than itself!
@@ -165,25 +164,25 @@ def promote(update: Update, context: CallbackContext) -> Optional[str]:
             bot.setChatAdministratorCustomTitle(chat.id, user_id, title)
         bot.sendMessage(
             chat.id,
-            "<b>{}</b> was promoted{}.".format(
+            "✅ <b>{}</b> تمت ترقيته{}! 🎉".format(
                     user_member.user.first_name or user_id,
-                    f' by <b>{message.from_user.first_name}</b>' if not message.sender_chat else ''
+                    f' من طرف <b>{message.from_user.first_name}</b>' if not message.sender_chat else ''
                 ),
             parse_mode=ParseMode.HTML,
         )
 
     except BadRequest as err:
         if err.message == "User_not_mutual_contact":
-            message.reply_text("How am I mean to promote someone who isn't in the group?")
+            message.reply_text("كيف نرقي واحد مش في القروب؟ 🤔")
         else:
-            message.reply_text(f"An error occurred while promoting:\n{err.message}")
+            message.reply_text(f"❌ صار خطأ وقت الترقية:\n{err.message}")
         return
 
     log_message = (
         f"<b>{html.escape(chat.title)}:</b>\n"
-        f"#PROMOTED\n"
-        f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-        f"<b>User:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
+        f"#ترقية\n"
+        f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+        f"<b>العضو:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
     )
 
     return log_message
@@ -206,26 +205,26 @@ def demote(update: Update, context: CallbackContext) -> Optional[str]:
     user_id = extract_user(message, args)
     if not user_id:
         message.reply_text(
-            "You don't seem to be referring to a user or the ID specified is incorrect.."
+            "ما لقيت المستخدم اللي تقصده، تأكد من الآيدي أو رد على رسالته 🤔"
         )
         return
 
     try:
         user_member = chat.get_member(user_id)
     except Exception as e:
-        message.reply_text(f"Error: {e}")
+        message.reply_text(f"❌ خطأ: {e}")
         return
 
     if user_member.status == "creator":
-        message.reply_text("This person is the chat CREATOR, find someone else to play with.")
+        message.reply_text("هذا صاحب القروب يا زول! روح لعب مع واحد ثاني 😂")
         return
 
     if user_member.status != "administrator":
-        message.reply_text("This user isn't an admin!")
+        message.reply_text("هذا مش مشرف أصلاً! 🤷")
         return
 
     if user_id == bot.id:
-        message.reply_text("I can't demote myself! Get an admin to do it for me.")
+        message.reply_text("ما نقدرش نتنازل عن روحي! خلي مشرف ثاني يسويها 😅")
         return
 
     try:
@@ -245,25 +244,25 @@ def demote(update: Update, context: CallbackContext) -> Optional[str]:
         )
         bot.sendMessage(
             chat.id,
-            "<b>{}</b> was demoted{}.".format(
+            "⬇️ <b>{}</b> تم تنزيله من الإشراف{}.".format(
                     user_member.user.first_name or user_id,
-                    f' by <b>{message.from_user.first_name}</b>' if not message.sender_chat else ''
+                    f' من طرف <b>{message.from_user.first_name}</b>' if not message.sender_chat else ''
             ),
             parse_mode=ParseMode.HTML,
         )
 
         log_message = (
             f"<b>{html.escape(chat.title)}:</b>\n"
-            f"#DEMOTED\n"
-            f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-            f"<b>User:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
+            f"#تنزيل\n"
+            f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+            f"<b>العضو:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
         )
 
         return log_message
 
     except BadRequest as e:
         message.reply_text(
-            f"Could not demote!\n{str(e)}"
+            f"❌ ما قدرت نتنازل عنه!\n{str(e)}"
         )
         return
 
@@ -291,62 +290,62 @@ def set_title(update: Update, context: CallbackContext) -> Optional[str]:
         user_member = chat.get_member(user_id)
     except:
         message.reply_text(
-            "You don't seem to be referring to a user or the ID specified is incorrect.."
+            "ما لقيت المستخدم اللي تقصده، تأكد من الآيدي أو رد على رسالته 🤔"
         )
         return
 
     if user_member.status == "creator" and user_id == user.id:
         message.reply_text(
-            "Okay -_-"
+            "تمام يا باشا 😏"
         )
         return
 
     if user_member.status == "creator":
         message.reply_text(
-            "This person is the chat CREATOR, only they can set their title."
+            "هذا صاحب القروب، هو بس اللي يقدر يغير لقبه 👑"
         )
         return
 
     if user_member.status != "administrator":
         message.reply_text(
-            "Titles can only be set to admins."
+            "الألقاب للمشرفين بس يا غالي! 🏷️"
         )
         return
 
     if user_id == bot.id:
         message.reply_text(
-            "I can't set my own title myself! Get the one who made me admin to do it for me."
+            "ما نقدرش نغير لقبي بروحي! خلي اللي رقاني يسويها 😅"
         )
         return
 
     if not title:
-        message.reply_text("You can't set an empty title!")
+        message.reply_text("ما ينفعش تحط لقب فاضي! 🤷")
         return
 
     if len(title) > 16:
         message.reply_text(
-            "The title length is longer than 16 characters.\nTruncating it to 16 characters."
+            "اللقب طويل برشا! أكثر من 16 حرف.\nبنقصه لـ 16 حرف ✂️"
         )
 
     try:
         bot.setChatAdministratorCustomTitle(chat.id, user_id, title)
     except BadRequest:
-        message.reply_text("I can only set titles for the admins I promote!")
+        message.reply_text("نقدر نحط ألقاب بس للمشرفين اللي أنا رقيتهم! 🤷")
         return
 
     bot.sendMessage(
         chat.id,
-        f"Successfully set title for <code>{user_member.user.first_name or user_id}</code> "
-        f"to <code>{html.escape(title[:16])}</code>!",
+        f"✅ تم تغيير لقب <code>{user_member.user.first_name or user_id}</code> "
+        f"لـ <code>{html.escape(title[:16])}</code>! 🏷️",
         parse_mode=ParseMode.HTML,
     )
 
     log_message = (
         f"<b>{html.escape(chat.title)}:</b>\n"
-        f"#ADMIN\nTitle set\n"
-        f"<b>By Admin:</b> {mention_html(user.id, user.first_name)}\n"
-        f"<b>To Admin:</b> {mention_html(user_member.user.id, user_member.user.first_name)}\n"
-        f"<b>New Title:</b> '<code>{html.escape(title[:16])}</code>'"
+        f"#لقب_جديد\n"
+        f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+        f"<b>للمشرف:</b> {mention_html(user_member.user.id, user_member.user.first_name)}\n"
+        f"<b>اللقب الجديد:</b> '<code>{html.escape(title[:16])}</code>'"
 
     )
     return log_message
@@ -364,29 +363,29 @@ def invite(update: Update, context: CallbackContext) -> Optional[str]:
     user = update.effective_user
 
     if chat.username:
-        update.effective_message.reply_text(f"https://t.me/{chat.username}")
+        update.effective_message.reply_text(f"🔗 https://t.me/{chat.username}")
     elif chat.type in [chat.SUPERGROUP, chat.CHANNEL]:
         bot_member = chat.get_member(bot.id)
         if bot_member.can_invite_users:
             invitelink = bot.exportChatInviteLink(chat.id)
-            update.effective_message.reply_text(invitelink)
+            update.effective_message.reply_text(f"🔗 {invitelink}")
 
             log_message = (
                 f"<b>{html.escape(chat.title)}:</b>\n"
-                f"#ADMIN\nInvite link exported\n"
-                f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-                f"<b>Invite Link:</b> '<code>{invitelink}</code>'"
+                f"#رابط_دعوة\n"
+                f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+                f"<b>الرابط:</b> '<code>{invitelink}</code>'"
 
             )
             return log_message
 
         else:
             update.effective_message.reply_text(
-                "I don't have access to the invite link, try changing my permissions!"
+                "ما عنديش صلاحية أجيب رابط الدعوة، غير صلاحياتي! 🔐"
             )
     else:
         update.effective_message.reply_text(
-            "I can only give you invite links for supergroups and channels, sorry!"
+            "نقدر نجيب روابط الدعوة بس للسوبرقروبات والقنوات! 📢"
         )
 
 
@@ -402,32 +401,32 @@ def admincache(update: Update, context: CallbackContext):
         last = None
     now = time.time()
     if last and last + 600 > now:
-        return msg.reply_text("this command can only be used once every 10 minutes")
+        return msg.reply_text("هذا الأمر ينفع مرة كل 10 دقايق بس ⏱️")
 
     if chat.type in ["channel", "private"]:
-        return msg.reply_text("this command can only be used in groups")
+        return msg.reply_text("هذا الأمر ينفع في القروبات بس 👥")
 
     if chat.get_member(user.id).status not in ["administrator", "creator"] and user.id != 1087968824:
-        return msg.reply_text("this command can only be used by admins")
+        return msg.reply_text("هذا الأمر للمشرفين بس! 🔐")
 
     A_CACHE[update.effective_chat.id] = update.effective_chat.get_administrators()
     B_CACHE[update.effective_chat.id] = update.effective_chat.get_member(context.bot.id)
-    msg.reply_text("Admin cache updated")
+    msg.reply_text("✅ تم تحديث قائمة المشرفين!")
     _admincache[chat.id] = time.time()
 
 
 _admincache = dict()
 
 
-@register(pattern="(admin|admins|staff|adminlist)", groups_only=True, no_args=True)
+@register(pattern="(admin|admins|staff|adminlist|مشرفين|المشرفين)", groups_only=True, no_args=True)
 async def adminList(event):
     try:
         _ = event.chat.title
     except:
         return
 
-    temp = await event.reply("Fetching full admins list..")
-    text = "Admins in **{}**".format(event.chat.title)
+    temp = await event.reply("⏳ جاري جلب قائمة المشرفين...")
+    text = "👥 المشرفين في **{}**".format(event.chat.title)
 
     admn = telethn.iter_participants(
         event.chat_id, 50, filter=ChannelParticipantsAdmins)
@@ -441,15 +440,15 @@ async def adminList(event):
         if isinstance(user.participant, ChannelParticipantCreator):
 
             if user.first_name == "":
-                name = "☠ Zombie"
+                name = "☠ محذوف"
             else:
                 name = "[{}](tg://user?id={})".format(user.first_name.split()[0], user.id)
             creator = "\nㅤㅤ• {}".format(name)
         elif user.bot:
             if user.first_name == "":
-                name = "☠ Zombie"
+                name = "☠ محذوف"
             else:
-                name = "[{}](tg://user?id={})".format(user.first_name, user.id)  # .split()[0] bots names arent long ig?
+                name = "[{}](tg://user?id={})".format(user.first_name, user.id)
             bots.append("\nㅤㅤ• {}".format(name))
 
         else:
@@ -468,23 +467,23 @@ async def adminList(event):
                 pass
             admin.append("\nㅤㅤ• {}".format(name))
 
-    text += "\nㅤ**Creator:**"
+    text += "\nㅤ👑 **المالك:**"
 
     text += creator
 
-    text += f"\nㅤ**Admins:** {len(admin)}"
+    text += f"\nㅤ🛡️ **المشرفين:** {len(admin)}"
 
     text += "".join(admin)
 
-    text += f"\nㅤ**Bots:** {len(bots)}"
+    text += f"\nㅤ🤖 **البوتات:** {len(bots)}"
 
     text += "".join(bots)
 
     members = await telethn.get_participants(event.chat_id)
     mm = len(members)
 
-    text += "\n**Members:** {}".format(mm)
-    text += "\n**Note:** these values are up to date"
+    text += "\n👥 **الأعضاء:** {}".format(mm)
+    text += "\n\n📌 هذي المعلومات محدثة توا"
 
     await temp.edit(text, parse_mode="markdown")
 
@@ -493,5 +492,4 @@ def get_help(chat):
     return gs(chat, "admin_help")
 
 
-__mod_name__ = "Admin"
-
+__mod_name__ = "المشرفين 🛡️"
