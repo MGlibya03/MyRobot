@@ -38,7 +38,6 @@ def is_sudo_plus(user_id: int) -> bool:
 def dev_plus(func):
     @wraps(func)
     def is_dev_plus_func(update: Update, context: CallbackContext, *args, **kwargs):
-        # bot = context.bot
         user = update.effective_user
 
         if user.id in DEV_USERS:
@@ -52,8 +51,8 @@ def dev_plus(func):
                 pass
         else:
             update.effective_message.reply_text(
-                "This is a developer restricted command."
-                " You do not have permissions to run this."
+                "⛔ هذا الامر للمطورين فقط!\n"
+                "ما عندك صلاحية لاستخدامه."
             )
 
     return is_dev_plus_func
@@ -62,7 +61,6 @@ def dev_plus(func):
 def sudo_plus(func):
     @wraps(func)
     def is_sudo_plus_func(update: Update, context: CallbackContext, *args, **kwargs):
-        # bot = context.bot
         user = update.effective_user
 
         if user and is_sudo_plus(user.id):
@@ -76,7 +74,8 @@ def sudo_plus(func):
                 pass
         else:
             update.effective_message.reply_text(
-                "This command is restricted to users with special access, you can't use it."
+                "⛔ هذا الامر للمشرفين فقط!\n"
+                "ما عندك صلاحية لاستخدامه."
             )
 
     return is_sudo_plus_func
@@ -85,7 +84,6 @@ def sudo_plus(func):
 def support_plus(func):
     @wraps(func)
     def is_support_plus_func(update: Update, context: CallbackContext, *args, **kwargs):
-        # bot = context.bot
         user = update.effective_user
 
         if user and is_support_plus(user.id):
@@ -110,7 +108,7 @@ def whitelist_plus(func):
             return func(update, context, *args, **kwargs)
         else:
             update.effective_message.reply_text(
-                "You don't have access to use this.\nVisit @TheBotsSupport"
+                "⛔ ما عندك صلاحية لاستخدام هذا الامر!"
             )
 
     return is_whitelist_plus_func
@@ -133,12 +131,13 @@ def connection_status(func):
             return func(update, context, *args, **kwargs)
         elif update.effective_message.chat.type == "private":
             update.effective_message.reply_text(
-                    "Send /connect in a group that you and I have in common first."
+                "📝 ارسل /connect في قروب مشترك بيننا اولا."
             )
             return connected_status
         return func(update, context, *args, **kwargs)
 
     return connected_status
+
 
 # Workaround for circular import with connection.py
 from tg_bot.modules import connection
