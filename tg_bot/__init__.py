@@ -26,7 +26,6 @@ def get_user_list(key):
 
 # setup loggers
 
-
 file_formatter = logging.Formatter('%(asctime)s - %(levelname)s -- < - %(name)s - > -- %(message)s')
 stream_formatter = logging.Formatter('< - %(name)s - > -- %(message)s')
 
@@ -43,14 +42,14 @@ stream_handler.setLevel(logging.WARNING)
 debug_handler.setLevel(logging.DEBUG)
 
 logging.basicConfig(handlers = [file_handler, stream_handler, debug_handler], level = logging.DEBUG)
-log = logging.getLogger('[Enterprise]')
+log = logging.getLogger('[زورو]')
 
-log.info("LOGGER is starting. | Project maintained by: github.com/itsLuuke (t.me/itsLuuke)")
+log.info("زورو بوت يشتغل... | البوت من تطوير: @MGlibya03")
 
 # if version < 3.6, stop bot.
 if sys.version_info[0] < 3 or sys.version_info[1] < 7:
     log.error(
-        "You MUST have a python version of at least 3.7! Multiple features depend on this. Bot quitting."
+        "لازم يكون عندك بايثون 3.7 او اعلى! البوت بيقفل."
     )
     quit(1)
 
@@ -113,8 +112,18 @@ class KigyoINIT:
         self.WEATHER_API: str = self.parser.get('WEATHER_API', None)
         self.CF_API_KEY: str =  self.parser.get("CF_API_KEY", None)
         self.bot_id = 0 #placeholder
-        self.bot_name = " Ōɖìղ" #placeholder
-        self.bot_username = "OdinRobot" #placeholder
+        
+        # ═══════════════════════════════════════
+        # تغيير اسم البوت لـ زورو
+        # ═══════════════════════════════════════
+        self.bot_name = "زورو 🤖"
+        self.bot_username = "ZoroRobot"
+        
+        # ═══════════════════════════════════════
+        # اعدادات الاشتراك الاجباري
+        # ═══════════════════════════════════════
+        self.FORCE_SUB_CHANNEL: str = self.parser.get('FORCE_SUB_CHANNEL', None)
+        
         self.DEBUG: bool = self.parser.getboolean("IS_DEBUG", False)
         self.DROP_UPDATES: bool = self.parser.getboolean("DROP_UPDATES", True)
         self.BOT_API_URL: str = self.parser.get('BOT_API_URL', "https://api.telegram.org/bot")
@@ -177,23 +186,26 @@ SPAMMERS = get_user_list("spammers")
 spamwatch_api = KInit.spamwatch_api
 CASH_API_KEY = KInit.CASH_API_KEY
 TIME_API_KEY = KInit.TIME_API_KEY
-# WALL_API = KInit.WALL_API
 LASTFM_API_KEY = KInit.LASTFM_API_KEY
 WEATHER_API = KInit.WEATHER_API
 CF_API_KEY = KInit.CF_API_KEY
 ALLOW_CHATS = KInit.ALLOW_CHATS
-# SPB_MODE = kigconfig.getboolean('SPB_MODE', False)
 SUPPORT_GROUP = KInit.SUPPORT_GROUP
 IS_DEBUG = KInit.IS_DEBUG
 GROUP_BLACKLIST = KInit.GROUP_BLACKLIST
 ANTISPAM_TOGGLE = KInit.ANTISPAM_TOGGLE
 bot_username = KInit.bot_username
+bot_name = KInit.bot_name
 GLOBALANNOUNCE = KInit.GLOBALANNOUNCE
 BACKUP_PASS = KInit.BACKUP_PASS
 SIBYL_KEY = KInit.SIBYL_KEY
 SIBYL_ENDPOINT = KInit.SIBYL_ENDPOINT
 BOT_ID = TOKEN.split(":")[0]
 
+# ═══════════════════════════════════════
+# اعداد الاشتراك الاجباري
+# ═══════════════════════════════════════
+FORCE_SUB_CHANNEL = KInit.FORCE_SUB_CHANNEL
 
 if IS_DEBUG:
     log.debug("Debug mode is on")
@@ -235,21 +247,11 @@ dispatcher: Dispatcher = updater.dispatcher
 j: JobQueue = updater.job_queue
 
 
-
 # Load at end to ensure all prev variables have been set
 from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
 
 if CUSTOM_CMD and len(CUSTOM_CMD) >= 1:
     tg.CommandHandler = CustomCommandHandler
-
-
-'''def spamfilters(text, user_id, chat_id):
-    # print("{} | {} | {}".format(text, user_id, chat_id))
-    if int(user_id) not in SPAMMERS:
-        return False
-
-    print("This user is a spammer!")
-    return True'''
 
 
 try:
@@ -258,6 +260,42 @@ try:
     antispam_module = True
 except ModuleNotFoundError:
     antispam_module = False
+
+
+# ═══════════════════════════════════════
+# دالة فحص الاشتراك الاجباري
+# ═══════════════════════════════════════
+def check_force_sub(bot, user_id):
+    """فحص اذا المستخدم مشترك في القناة"""
+    if not FORCE_SUB_CHANNEL:
+        return True
+    if user_id == OWNER_ID:
+        return True
+    if user_id in SUDO_USERS:
+        return True
+    try:
+        member = bot.get_chat_member(f"@{FORCE_SUB_CHANNEL}", user_id)
+        if member.status in ['member', 'administrator', 'creator']:
+            return True
+        return False
+    except Exception as e:
+        log.warning(f"Force sub check error: {e}")
+        return True
+
+
+def force_sub_message():
+    """رسالة الاشتراك الاجباري"""
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📢 اشترك في القناة", url=f"https://t.me/{FORCE_SUB_CHANNEL}")],
+        [InlineKeyboardButton("✅ اشتركت", callback_data="check_force_sub")]
+    ])
+    text = f"""⚠️ *يجب الاشتراك في قناة المطور اولا!*
+
+📢 @{FORCE_SUB_CHANNEL}
+
+✅ بعد الاشتراك اضغط "اشتركت" """
+    return text, keyboard
 
 
 def spamcheck(func):
@@ -276,6 +314,18 @@ def spamcheck(func):
             return False
         elif user.id == "777000":
             return False
+        
+        # ═══════════════════════════════════════
+        # فحص الاشتراك الاجباري
+        # ═══════════════════════════════════════
+        elif FORCE_SUB_CHANNEL and not check_force_sub(context.bot, user.id):
+            text, keyboard = force_sub_message()
+            try:
+                message.reply_text(text, parse_mode="Markdown", reply_markup=keyboard)
+            except:
+                pass
+            return False
+        
         elif antispam_module and ANTISPAM_TOGGLE:
             parsing_date = time.mktime(message.date.timetuple())
             if detect_user(user.id, chat.id, message, parsing_date):
@@ -284,10 +334,8 @@ def spamcheck(func):
         elif int(user.id) in SPAMMERS:
             return False
         elif str(chat.id) in GROUP_BLACKLIST:
-            dispatcher.bot.sendMessage(chat.id, "This group is blacklisted, I'm outa here...")
+            dispatcher.bot.sendMessage(chat.id, "هالقروب في القائمة السوداء، باي...")
             dispatcher.bot.leaveChat(chat.id)
             return False
         return func(update, context, *args, **kwargs)
     return check_user
-
-
