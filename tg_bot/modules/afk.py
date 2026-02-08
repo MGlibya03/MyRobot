@@ -9,6 +9,10 @@ from .users import get_user_id
 from .helper_funcs.decorators import kigcmd, kigmsg
 
 
+# ==================== الأوامر العربية ====================
+ARABIC_AFK_COMMANDS = ["غائب", "انا_غائب", "راجع", "سأعود"]
+
+
 @kigmsg(Filters.regex("(?i)^brb"), friendly="afk", group=3)
 @kigcmd(command="afk", group=3)
 def afk(update: Update, _: CallbackContext):
@@ -23,14 +27,56 @@ def afk(update: Update, _: CallbackContext):
         reason = args[1]
         if len(reason) > 100:
             reason = reason[:100]
-            notice = "\nYour afk reason was shortened to 100 characters."
+            notice = "\n⚠️ تم اختصار السبب إلى 100 حرف."
     else:
         reason = ""
 
     sql.set_afk(update.effective_user.id, reason)
     fname = update.effective_user.first_name
     try:
-        update.effective_message.reply_text("{} is now away!{}".format(fname, notice))
+        if reason:
+            update.effective_message.reply_text(
+                f"💤 {fname} صار غائب الآن!\n📝 السبب: {reason}{notice}"
+            )
+        else:
+            update.effective_message.reply_text(f"💤 {fname} صار غائب الآن!{notice}")
+    except BadRequest:
+        pass
+
+
+# ==================== معالج عربي للغياب ====================
+@kigmsg(Filters.regex(r'^(' + '|'.join(ARABIC_AFK_COMMANDS) + r')(\s|$)'), friendly="afk", group=3)
+def arabic_afk(update: Update, _: CallbackContext):
+    message = update.effective_message
+    user = update.effective_user
+
+    if not user or user.id in (777000, 1087968824, 136817688):
+        return
+
+    text = message.text
+    for cmd in ARABIC_AFK_COMMANDS:
+        if text.startswith(cmd):
+            text = text[len(cmd):].strip()
+            break
+
+    notice = ""
+    if text:
+        reason = text
+        if len(reason) > 100:
+            reason = reason[:100]
+            notice = "\n⚠️ تم اختصار السبب إلى 100 حرف."
+    else:
+        reason = ""
+
+    sql.set_afk(user.id, reason)
+    fname = user.first_name
+    try:
+        if reason:
+            message.reply_text(
+                f"💤 {fname} صار غائب الآن!\n📝 السبب: {reason}{notice}"
+            )
+        else:
+            message.reply_text(f"💤 {fname} صار غائب الآن!{notice}")
     except BadRequest:
         pass
 
@@ -49,14 +95,18 @@ def no_longer_afk(update: Update, _: CallbackContext):
         firstname = update.effective_user.first_name
         try:
             options = [
-                "{} is here!",
-                "{} is back!",
-                "{} is now in the chat!",
-                "{} is awake!",
-                "{} is back online!",
-                "{} is finally here!",
-                "Welcome back! {}",
-                "Where is {}?\nIn the chat!",
+                "🎉 {} رجع!",
+                "👋 {} موجود الآن!",
+                "✨ {} دخل المحادثة!",
+                "😄 {} صحي من النوم!",
+                "🌟 {} رجع أونلاين!",
+                "🎊 {} أخيراً وصل!",
+                "🤗 أهلاً بعودتك {}!",
+                "👀 وين كان {}؟\nهاهو موجود!",
+                "💪 {} رجع بقوة!",
+                "🔥 {} في البيت!",
+                "🎯 {} حاضر!",
+                "⚡ {} عاد من جديد!",
             ]
             chosen_option = random.choice(options)
             update.effective_message.reply_text(
@@ -131,10 +181,10 @@ def check_afk(update, user_id, fst_name, userc_id):
     is_afk, reason = sql.check_afk_status(user_id)
     if is_afk:
         if not reason:
-            res = "{} is afk".format(fst_name)
+            res = f"💤 {fst_name} غائب حالياً"
             update.effective_message.reply_text(res, parse_mode=None)
         else:
-            res = "{} is afk.\nReason: <code>{}</code>".format(
+            res = "💤 {} غائب حالياً.\n📝 السبب: <code>{}</code>".format(
                 html.escape(fst_name), html.escape(reason)
             )
             update.effective_message.reply_text(res, parse_mode="html")
@@ -144,10 +194,10 @@ def __gdpr__(user_id):
     sql.rm_afk(user_id)
 
 
-# from .language import gs
-#
-# def get_help(chat):
-#     return gs(chat, "afk_help")
+from .language import gs
+
+def get_help(chat):
+    return gs(chat, "afk_help")
 
 
-__mod_name__ = "AFK"
+__mod_name__ = "الغياب"
