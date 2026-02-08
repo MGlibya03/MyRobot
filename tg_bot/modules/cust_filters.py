@@ -48,9 +48,15 @@ ENUM_FUNC_MAP = {
     sql.Types.AUDIO.value: dispatcher.bot.send_audio,
     sql.Types.VOICE.value: dispatcher.bot.send_voice,
     sql.Types.VIDEO.value: dispatcher.bot.send_video,
-    # sql.Types.VIDEO_NOTE.value: dispatcher.bot.send_video_note
 }
 CUSTFILTERS_GROUP = 50
+
+# ==================== الأوامر العربية ====================
+ARABIC_FILTERS_COMMANDS = ["الفلاتر", "فلاتر", "الردود"]
+ARABIC_FILTER_COMMANDS = ["فلتر", "اضف_فلتر", "رد"]
+ARABIC_STOP_COMMANDS = ["ايقاف", "حذف_فلتر", "ازالة_فلتر", "وقف"]
+ARABIC_RMALL_COMMANDS = ["مسح_الفلاتر", "حذف_كل_الفلاتر"]
+
 
 @kigcmd(command='filters', admin_ok=True)
 @spamcheck
@@ -63,21 +69,70 @@ def list_handlers(update, context):
     if conn is not False:
         chat_id = conn
         chat_name = dispatcher.bot.getChat(conn).title
-        filter_list = "*Filter in {}:*\n"
+        filter_list = "*📋 الفلاتر في {}:*\n"
     else:
         chat_id = update.effective_chat.id
         if chat.type == "private":
-            chat_name = "Local filters"
-            filter_list = "*local filters:*\n"
+            chat_name = "الفلاتر المحلية"
+            filter_list = "*📋 الفلاتر المحلية:*\n"
         else:
             chat_name = chat.title
-            filter_list = "*Filters in {}*:\n"
+            filter_list = "*📋 الفلاتر في {}*:\n"
 
     all_handlers = sql.get_chat_triggers(chat_id)
 
     if not all_handlers:
         send_message(
-            update.effective_message, "No filters saved in {}!".format(chat_name)
+            update.effective_message, "📭 ما في فلاتر محفوظة في {}!".format(chat_name)
+        )
+        return
+
+    for keyword in all_handlers:
+        entry = " • `{}`\n".format(escape_markdown(keyword))
+        if len(entry) + len(filter_list) > telegram.MAX_MESSAGE_LENGTH:
+            send_message(
+                update.effective_message,
+                filter_list.format(chat_name),
+                parse_mode=telegram.ParseMode.MARKDOWN,
+            )
+            filter_list = entry
+        else:
+            filter_list += entry
+
+    send_message(
+        update.effective_message,
+        filter_list.format(chat_name),
+        parse_mode=telegram.ParseMode.MARKDOWN,
+    )
+
+
+# ==================== معالج عربي لعرض الفلاتر ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_FILTERS_COMMANDS) + r')$'), group=3)
+@spamcheck
+@typing_action
+def arabic_list_handlers(update, context):
+    chat = update.effective_chat
+    user = update.effective_user
+
+    conn = connected(context.bot, update, chat, user.id, need_admin=False)
+    if conn is not False:
+        chat_id = conn
+        chat_name = dispatcher.bot.getChat(conn).title
+        filter_list = "*📋 الفلاتر في {}:*\n"
+    else:
+        chat_id = update.effective_chat.id
+        if chat.type == "private":
+            chat_name = "الفلاتر المحلية"
+            filter_list = "*📋 الفلاتر المحلية:*\n"
+        else:
+            chat_name = chat.title
+            filter_list = "*📋 الفلاتر في {}*:\n"
+
+    all_handlers = sql.get_chat_triggers(chat_id)
+
+    if not all_handlers:
+        send_message(
+            update.effective_message, "📭 ما في فلاتر محفوظة في {}!".format(chat_name)
         )
         return
 
@@ -114,19 +169,17 @@ def filters(update, context) -> None:  # sourcery no-metrics
         None, 1
     )  # use python's maxsplit to separate Cmd, keyword, and reply_text
 
-
-
     conn = connected(context.bot, update, chat, user.id)
     if conn is not False:
         chat_id = conn
         chat_name = dispatcher.bot.getChat(conn).title
     else:
         chat_id = update.effective_chat.id
-        chat_name = "local filters" if chat.type == "private" else chat.title
+        chat_name = "الفلاتر المحلية" if chat.type == "private" else chat.title
     if not msg.reply_to_message and len(args) < 2:
         send_message(
             update.effective_message,
-            "Please provide keyboard keyword for this filter to reply with!",
+            "⚠️ أعطني الكلمة المفتاحية والرد للفلتر!",
         )
         return
 
@@ -134,7 +187,7 @@ def filters(update, context) -> None:  # sourcery no-metrics
         if len(args) < 2:
             send_message(
                 update.effective_message,
-                "Please provide keyword for this filter to reply with!",
+                "⚠️ أعطني الكلمة المفتاحية للفلتر!",
             )
             return
         else:
@@ -164,7 +217,7 @@ def filters(update, context) -> None:  # sourcery no-metrics
         if not text:
             send_message(
                 update.effective_message,
-                "There is no filter message - You can't JUST have buttons, you need a message to go with it!",
+                "⚠️ ما في رسالة للفلتر - ما تقدر تحط أزرار بس بدون رسالة!",
             )
             return
 
@@ -186,7 +239,7 @@ def filters(update, context) -> None:  # sourcery no-metrics
     elif not text and not file_type:
         send_message(
             update.effective_message,
-            "Please provide keyword for this filter reply with!",
+            "⚠️ أعطني الكلمة المفتاحية والرد للفلتر!",
         )
         return
 
@@ -207,29 +260,125 @@ def filters(update, context) -> None:  # sourcery no-metrics
         if (msg.reply_to_message.text or msg.reply_to_message.caption) and not text:
             send_message(
                 update.effective_message,
-                "There is no filter message - You can't JUST have buttons, you need a message to go with it!",
+                "⚠️ ما في رسالة للفلتر - ما تقدر تحط أزرار بس بدون رسالة!",
             )
             return
 
     else:
-        send_message(update.effective_message, "Invalid filter!")
+        send_message(update.effective_message, "⚠️ فلتر غير صحيح!")
         return
 
     add = addnew_filter(update, chat_id, keyword, text, file_type, file_id, buttons)
-    # This is an old method
-    # sql.add_filter(chat_id, keyword, content, is_sticker, is_document, is_image, is_audio, is_voice, is_video, buttons)
 
     if add is True:
         send_message(
             update.effective_message,
-            "Saved filter '{}' in *{}*!".format(keyword, chat_name),
+            "✅ تم حفظ الفلتر '{}' في *{}*!".format(keyword, chat_name),
             parse_mode=telegram.ParseMode.MARKDOWN,
         )
         logmsg = (
         f"<b>{escape(chat.title or chat.id)}:</b>\n"
-        f"#ADDFILTER\n"
-        f"<b>Admin:</b> {mention_html(user.id, escape(user.first_name))}\n"
-        f"<b>Note:</b> {keyword}"
+        f"#إضافة_فلتر\n"
+        f"<b>المشرف:</b> {mention_html(user.id, escape(user.first_name))}\n"
+        f"<b>الفلتر:</b> {keyword}"
+        )
+        return logmsg
+    raise DispatcherHandlerStop
+
+
+# ==================== معالج عربي لإضافة فلتر ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_FILTER_COMMANDS) + r')(\s|$)'), group=55)
+@spamcheck
+@typing_action
+@user_admin_check(AdminPerms.CAN_CHANGE_INFO)
+@loggable
+def arabic_filters(update, context) -> None:
+    chat = update.effective_chat
+    user = update.effective_user
+    msg = update.effective_message
+    
+    text = msg.text
+    for cmd in ARABIC_FILTER_COMMANDS:
+        if text.startswith(cmd):
+            text = text[len(cmd):].strip()
+            break
+
+    conn = connected(context.bot, update, chat, user.id)
+    if conn is not False:
+        chat_id = conn
+        chat_name = dispatcher.bot.getChat(conn).title
+    else:
+        chat_id = update.effective_chat.id
+        chat_name = "الفلاتر المحلية" if chat.type == "private" else chat.title
+
+    if not msg.reply_to_message and not text:
+        send_message(
+            msg,
+            "⚠️ أعطني الكلمة المفتاحية والرد للفلتر!\n\n"
+            "مثال: `فلتر مرحبا أهلاً وسهلاً!`\n"
+            "أو رد على رسالة بـ: `فلتر مرحبا`",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    if msg.reply_to_message:
+        if not text:
+            send_message(msg, "⚠️ أعطني الكلمة المفتاحية للفلتر!")
+            return
+        keyword = text.split()[0].lower()
+        # الحصول على نوع الملف والنص من الرد
+        filter_text, file_type, file_id = get_filter_type(msg)
+        if msg.reply_to_message.text:
+            text_to_parsing = msg.reply_to_message.text
+        elif msg.reply_to_message.caption:
+            text_to_parsing = msg.reply_to_message.caption
+        else:
+            text_to_parsing = ""
+        offset = len(text_to_parsing)
+        filter_text, buttons = button_markdown_parser(
+            text_to_parsing, entities=msg.parse_entities(), offset=offset
+        )
+        filter_text = filter_text.strip()
+    else:
+        extracted = split_quotes(text)
+        if len(extracted) < 1:
+            return
+        keyword = extracted[0].lower()
+        
+        if len(extracted) >= 2:
+            offset = len(extracted[1]) - len(msg.text)
+            filter_text, buttons = button_markdown_parser(
+                extracted[1], entities=msg.parse_entities(), offset=offset
+            )
+            filter_text = filter_text.strip()
+            file_type = None
+            file_id = None
+        else:
+            send_message(msg, "⚠️ أعطني الرد للفلتر!")
+            return
+
+    if not filter_text and not file_type:
+        send_message(msg, "⚠️ أعطني الرد للفلتر!")
+        return
+
+    # Remove existing handler
+    for handler in dispatcher.handlers.get(HANDLER_GROUP, []):
+        if handler.filters == (keyword, chat_id):
+            dispatcher.remove_handler(handler, HANDLER_GROUP)
+
+    add = addnew_filter(update, chat_id, keyword, filter_text, file_type, file_id, buttons if 'buttons' in dir() else [])
+
+    if add is True:
+        send_message(
+            msg,
+            "✅ تم حفظ الفلتر '{}' في *{}*!".format(keyword, chat_name),
+            parse_mode=telegram.ParseMode.MARKDOWN,
+        )
+        logmsg = (
+            f"<b>{escape(chat.title or chat.id)}:</b>\n"
+            f"#إضافة_فلتر\n"
+            f"<b>المشرف:</b> {mention_html(user.id, escape(user.first_name))}\n"
+            f"<b>الفلتر:</b> {keyword}"
         )
         return logmsg
     raise DispatcherHandlerStop
@@ -253,15 +402,15 @@ def stop_filter(update, context) -> str:
         chat_name = dispatcher.bot.getChat(conn).title
     else:
         chat_id = update.effective_chat.id
-        chat_name = "Local filters" if chat.type == "private" else chat.title
+        chat_name = "الفلاتر المحلية" if chat.type == "private" else chat.title
     if len(args) < 2:
-        send_message(update.effective_message, "What should i stop?")
+        send_message(update.effective_message, "⚠️ شو تبيني أوقف؟")
         return ''
 
     chat_filters = sql.get_chat_triggers(chat_id)
 
     if not chat_filters:
-        send_message(update.effective_message, "No filters active here!")
+        send_message(update.effective_message, "📭 ما في فلاتر مفعلة هني!")
         return ''
 
     for keyword in chat_filters:
@@ -269,14 +418,14 @@ def stop_filter(update, context) -> str:
             sql.remove_filter(chat_id, args[1])
             send_message(
                 update.effective_message,
-                "Okay, I'll stop replying to that filter in *{}*.".format(chat_name),
+                "✅ تمام، مش حنرد على هالفلتر بعد في *{}*.".format(chat_name),
                 parse_mode=telegram.ParseMode.MARKDOWN,
             )
             logmsg = (
                     f"<b>{escape(chat.title or chat.id)}:</b>\n"
-                    f"#STOPFILTER\n"
-                    f"<b>Admin:</b> {mention_html(user.id, escape(user.first_name))}\n"
-                    f"<b>Filter:</b> {keyword}"
+                    f"#إيقاف_فلتر\n"
+                    f"<b>المشرف:</b> {mention_html(user.id, escape(user.first_name))}\n"
+                    f"<b>الفلتر:</b> {keyword}"
                 )
             try:
                 raise DispatcherHandlerStop
@@ -285,8 +434,72 @@ def stop_filter(update, context) -> str:
 
     send_message(
         update.effective_message,
-        "That's not a filter - Click: /filters to get currently active filters.",
+        "⚠️ هذا مش فلتر موجود - اكتب الفلاتر لعرض الفلاتر المفعلة.",
     )
+
+
+# ==================== معالج عربي لإيقاف فلتر ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_STOP_COMMANDS) + r')(\s|$)'), group=3)
+@spamcheck
+@typing_action
+@user_admin_check(AdminPerms.CAN_CHANGE_INFO)
+@loggable
+def arabic_stop_filter(update, context) -> str:
+    chat = update.effective_chat
+    user = update.effective_user
+    message = update.effective_message
+
+    text = message.text
+    for cmd in ARABIC_STOP_COMMANDS:
+        if text.startswith(cmd):
+            text = text[len(cmd):].strip()
+            break
+
+    conn = connected(context.bot, update, chat, user.id)
+    if conn is not False:
+        chat_id = conn
+        chat_name = dispatcher.bot.getChat(conn).title
+    else:
+        chat_id = update.effective_chat.id
+        chat_name = "الفلاتر المحلية" if chat.type == "private" else chat.title
+
+    if not text:
+        send_message(message, "⚠️ شو الفلتر اللي تبي توقفه؟")
+        return ''
+
+    keyword = text.split()[0]
+    chat_filters = sql.get_chat_triggers(chat_id)
+
+    if not chat_filters:
+        send_message(message, "📭 ما في فلاتر مفعلة هني!")
+        return ''
+
+    for filt in chat_filters:
+        if filt == keyword:
+            sql.remove_filter(chat_id, keyword)
+            send_message(
+                message,
+                "✅ تمام، مش حنرد على الفلتر '{}' بعد في *{}*.".format(keyword, chat_name),
+                parse_mode=telegram.ParseMode.MARKDOWN,
+            )
+            logmsg = (
+                f"<b>{escape(chat.title or chat.id)}:</b>\n"
+                f"#إيقاف_فلتر\n"
+                f"<b>المشرف:</b> {mention_html(user.id, escape(user.first_name))}\n"
+                f"<b>الفلتر:</b> {keyword}"
+            )
+            try:
+                raise DispatcherHandlerStop
+            finally:
+                return logmsg
+
+    send_message(
+        message,
+        "⚠️ هذا مش فلتر موجود - اكتب `الفلاتر` لعرض الفلاتر المفعلة.",
+        parse_mode=ParseMode.MARKDOWN,
+    )
+    return ''
+
 
 @kigmsg((CustomFilters.has_text & ~Filters.update.edited_message), group=CUSTFILTERS_GROUP)
 @spamcheck
@@ -307,7 +520,7 @@ def reply_filter(update, context):  # sourcery no-metrics
         if re.search(pattern, to_match, flags=re.IGNORECASE):
             filt = sql.get_filter(chat.id, keyword)
 
-            if to_match.endswith(("raw", "noformat")) and to_match.lower() == keyword + (" raw" or " noformat"):
+            if to_match.endswith(("raw", "noformat", "خام")) and to_match.lower() == keyword + (" raw" or " noformat" or " خام"):
                 no_format = True
             else:
                 no_format = False
@@ -337,7 +550,7 @@ def reply_filter(update, context):  # sourcery no-metrics
                     else:
                         text = filt.reply_text
                     if (text.startswith("~!") or text.startswith(" ~!")) and (text.endswith("!~") or text.endswith("!~ ")):
-                        sticker_id = text.replace("~!", "").replace("!~", "").replace(" ", "") # replace space (' ') bcz, got error: Wrong remote file....
+                        sticker_id = text.replace("~!", "").replace("!~", "").replace(" ", "")
                         try:
                             context.bot.send_sticker(
                                 chat.id,
@@ -352,7 +565,7 @@ def reply_filter(update, context):  # sourcery no-metrics
                             ):
                                 context.bot.send_message(
                                     chat.id,
-                                    "Message couldn't be sent, Is the sticker id valid?",
+                                    "⚠️ ما قدرت أرسل الرسالة، هل آيدي الملصق صحيح؟",
                                 )
                                 return
                             else:
@@ -511,9 +724,8 @@ def reply_filter(update, context):  # sourcery no-metrics
                         try:
                             send_message(
                                 update.effective_message,
-                                "You seem to be trying to use an unsupported url protocol. "
-                                "Telegram doesn't support buttons for some protocols, such as tg://. Please try "
-                                "again...",
+                                "⚠️ يبدو إنك تستخدم بروتوكول URL غير مدعوم. "
+                                "تيليجرام ما يدعم بعض البروتوكولات مثل tg://. جرب مرة ثانية...",
                             )
                         except BadRequest as excp:
                             log.exception("Error in filters: " + excp.message)
@@ -532,7 +744,7 @@ def reply_filter(update, context):  # sourcery no-metrics
                         try:
                             send_message(
                                 update.effective_message,
-                                "This message couldn't be sent as it's incorrectly formatted.",
+                                "⚠️ ما قدرت أرسل هالرسالة لأن التنسيق غلط.",
                             )
                         except BadRequest as excp:
                             log.exception("Error in filters: " + excp.message)
@@ -546,7 +758,6 @@ def reply_filter(update, context):  # sourcery no-metrics
                         )
 
             else:
-                    # LEGACY - all new filters will have has_markdown set to True.
                 try:
                     send_message(update.effective_message, filt.reply)
                 except BadRequest as excp:
@@ -562,21 +773,50 @@ def rmall_filters(update, context):
     member = chat.get_member(user.id)
     if member.status != "creator" and user.id not in SUDO_USERS:
         update.effective_message.reply_text(
-            "Only the chat owner can clear all filters at once."
+            "⚠️ بس مالك المجموعة يقدر يمسح كل الفلاتر مرة وحدة."
         )
     else:
         buttons = InlineKeyboardMarkup(
             [
                 [
                     InlineKeyboardButton(
-                        text="Stop all filters", callback_data="filters_rmall"
+                        text="🗑 إيقاف كل الفلاتر", callback_data="filters_rmall"
                     )
                 ],
-                [InlineKeyboardButton(text="Cancel", callback_data="filters_cancel")],
+                [InlineKeyboardButton(text="❌ إلغاء", callback_data="filters_cancel")],
             ]
         )
         update.effective_message.reply_text(
-            f"Are you sure you would like to stop ALL filters in {chat.title}? This action cannot be undone.",
+            f"⚠️ هل أنت متأكد تبي توقف كل الفلاتر في {chat.title}؟ هالعملية ما تقدر تتراجع عنها!",
+            reply_markup=buttons,
+            parse_mode=ParseMode.MARKDOWN,
+        )
+
+
+# ==================== معالج عربي لمسح كل الفلاتر ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_RMALL_COMMANDS) + r')$'), group=3)
+@spamcheck
+def arabic_rmall_filters(update, context):
+    chat = update.effective_chat
+    user = update.effective_user
+    member = chat.get_member(user.id)
+    if member.status != "creator" and user.id not in SUDO_USERS:
+        update.effective_message.reply_text(
+            "⚠️ بس مالك المجموعة يقدر يمسح كل الفلاتر مرة وحدة."
+        )
+    else:
+        buttons = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        text="🗑 إيقاف كل الفلاتر", callback_data="filters_rmall"
+                    )
+                ],
+                [InlineKeyboardButton(text="❌ إلغاء", callback_data="filters_cancel")],
+            ]
+        )
+        update.effective_message.reply_text(
+            f"⚠️ هل أنت متأكد تبي توقف كل الفلاتر في {chat.title}؟ هالعملية ما تقدر تتراجع عنها!",
             reply_markup=buttons,
             parse_mode=ParseMode.MARKDOWN,
         )
@@ -594,7 +834,7 @@ def rmall_callback(update, context) -> str:
         if member.status == "creator" or query.from_user.id in SUDO_USERS:
             allfilters = sql.get_chat_triggers(chat.id)
             if not allfilters:
-                msg.edit_text("No filters in this chat, nothing to stop!")
+                msg.edit_text("📭 ما في فلاتر في هالمجموعة!")
                 return ""
 
             count = 0
@@ -606,32 +846,32 @@ def rmall_callback(update, context) -> str:
             for i in filterlist:
                 sql.remove_filter(chat.id, i)
 
-            msg.edit_text(f"Cleaned {count} filters in {chat.title}")
+            msg.edit_text(f"✅ تم حذف {count} فلتر في {chat.title}")
 
             log_message = (
                 f"<b>{escape(chat.title or chat.id)}:</b>\n"
-                f"#CLEAREDALLFILTERS\n"
-                f"<b>Admin:</b> {mention_html(user.id, escape(user.first_name))}"
+                f"#مسح_كل_الفلاتر\n"
+                f"<b>المشرف:</b> {mention_html(user.id, escape(user.first_name))}"
             )
             return log_message
 
         else:
-            query.answer("Only owner of the chat can do this.")
+            query.answer("⚠️ بس مالك المجموعة يقدر يسوي هالشي.")
             return ""
 
     elif query.data == "filters_cancel":
         if member.status == "creator" or query.from_user.id in SUDO_USERS:
-            msg.edit_text("Clearing of all filters has been cancelled.")
+            msg.edit_text("❌ تم إلغاء العملية.")
             return ""
         else:
-            query.answer("Only owner of the chat can do this.")
+            query.answer("⚠️ بس مالك المجموعة يقدر يسوي هالشي.")
             return ""
 
 
 # NOT ASYNC NOT A HANDLER
 def get_exception(excp, filt, chat):
     if excp.message == "Unsupported url protocol":
-        return "You seem to be trying to use the URL protocol which is not supported. Telegram does not support key for multiple protocols, such as tg: //. Please try again!"
+        return "⚠️ يبدو إنك تستخدم بروتوكول URL غير مدعوم. تيليجرام ما يدعم بعض البروتوكولات مثل tg://. جرب مرة ثانية!"
     elif excp.message == "Reply message not found":
         return "noreply"
     else:
@@ -639,15 +879,15 @@ def get_exception(excp, filt, chat):
         log.exception(
             "Could not parse filter %s in chat %s", str(filt.keyword), str(chat.id)
         )
-        return "This data could not be sent because it is incorrectly formatted."
+        return "⚠️ ما قدرت أرسل هالبيانات لأن التنسيق غلط."
 
 
 # NOT ASYNC NOT A HANDLER
 def addnew_filter(update, chat_id, keyword, text, file_type, file_id, buttons):
     msg = update.effective_message
     totalfilt = sql.get_chat_triggers(chat_id)
-    if len(totalfilt) >= 150:  # Idk why i made this like function....
-        msg.reply_text("This group has reached its max filters limit of 150.")
+    if len(totalfilt) >= 150:
+        msg.reply_text("⚠️ هالمجموعة وصلت الحد الأقصى للفلاتر (150).")
         return False
     else:
         sql.new_add_filter(chat_id, keyword, text, file_type, file_id, buttons)
@@ -655,7 +895,7 @@ def addnew_filter(update, chat_id, keyword, text, file_type, file_id, buttons):
 
 
 def __stats__():
-    return "• {} filters, across {} chats.".format(sql.num_filters(), sql.num_chats())
+    return "• {} فلتر، في {} مجموعة.".format(sql.num_filters(), sql.num_chats())
 
 
 def __import_data__(chat_id, data):
@@ -671,16 +911,11 @@ def __migrate__(old_chat_id, new_chat_id):
 
 def __chat_settings__(chat_id, _):
     cust_filters = sql.get_chat_triggers(chat_id)
-    return "There are `{}` custom filters here.".format(len(cust_filters))
+    return "في `{}` فلتر مخصص هني.".format(len(cust_filters))
 
 from .language import gs
 
 def get_help(chat):
     return gs(chat, "cust_filters_help")
 
-__mod_name__ = "Filters"
-
-
-# __handlers__ = [
-#     HANDLER_GROUP,
-# ]
+__mod_name__ = "الفلاتر"
