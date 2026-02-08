@@ -33,11 +33,11 @@ def extract_user_and_text(
         return id_from_reply(message)
 
     text_to_parse = split_text[1]
-
     text = ""
 
     entities = list(message.parse_entities([MessageEntity.TEXT_MENTION]))
     ent = entities[0] if entities else None
+    
     if entities and ent and ent.offset == len(message.text) - len(text_to_parse):
         ent = entities[0]
         user_id = ent.user.id
@@ -52,7 +52,6 @@ def extract_user_and_text(
                 "جرب ترد على رسالته او تحولها لي."
             )
             return None, None
-
         else:
             user_id = user_id
             res = message.text.split(None, 2)
@@ -76,12 +75,11 @@ def extract_user_and_text(
     except BadRequest as excp:
         if excp.message in ("User_id_invalid", "Chat not found"):
             message.reply_text(
-                "❌ ما تعاملت مع هذا المستخدم قبل كذا!\n"
-                "حول لي رسالة منه باش اقدر اتحكم فيه."
+                "❌ ما تعاملت مع هذا المستخدم قبل!\n"
+                "حول لي رسالة منه."
             )
         else:
             log.exception("Exception %s on user %s", excp.message, user_id)
-
         return None, None
 
     return user_id, text
@@ -105,11 +103,11 @@ def extract_unt_fedban(
         return id_from_reply(message)
 
     text_to_parse = split_text[1]
-
     text = ""
 
     entities = list(message.parse_entities([MessageEntity.TEXT_MENTION]))
     ent = entities[0] if entities else None
+    
     if entities and ent and ent.offset == len(message.text) - len(text_to_parse):
         ent = entities[0]
         user_id = ent.user.id
@@ -120,11 +118,10 @@ def extract_unt_fedban(
         user_id = get_user_id(user)
         if not user_id and not isinstance(user_id, int):
             message.reply_text(
-                "❌ ما عندي هذا المستخدم في قاعدة البيانات!\n"
+                "❌ ما عندي هذا المستخدم!\n"
                 "رد على رسالته او حولها لي."
             )
             return None, None
-
         else:
             user_id = user_id
             res = message.text.split(None, 2)
@@ -146,12 +143,10 @@ def extract_unt_fedban(
     try:
         message.bot.get_chat(user_id)
     except BadRequest as excp:
-        if excp.message in ("User_id_invalid", "Chat not found") and not isinstance(
-            user_id, int
-        ):
+        if excp.message in ("User_id_invalid", "Chat not found") and not isinstance(user_id, int):
             message.reply_text(
-                "❌ ما تعاملت مع هذا المستخدم قبل!\n"
-                "حول لي رسالة منه باش اقدر اتعامل معاه."
+                "❌ ما تعاملت مع هذا المستخدم!\n"
+                "حول لي رسالة منه."
             )
             return None, None
         elif excp.message != "Chat not found":
