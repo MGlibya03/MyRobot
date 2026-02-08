@@ -1,3 +1,5 @@
+rn extract_unt_fedban(message, args)[0]
+
 from typing import List, Optional, Tuple
 
 from tg_bot import log
@@ -30,7 +32,7 @@ def extract_user_and_text(
     split_text = message.text.split(None, 1)
 
     if len(split_text) < 2:
-        return id_from_reply(message)  # only option possible
+        return id_from_reply(message)
 
     text_to_parse = split_text[1]
 
@@ -38,19 +40,18 @@ def extract_user_and_text(
 
     entities = list(message.parse_entities([MessageEntity.TEXT_MENTION]))
     ent = entities[0] if entities else None
-    # if entity offset matches (command end/text start) then all good
     if entities and ent and ent.offset == len(message.text) - len(text_to_parse):
         ent = entities[0]
         user_id = ent.user.id
-        text = message.text[ent.offset + ent.length :]
+        text = message.text[ent.offset + ent.length:]
 
     elif len(args) >= 1 and args[0][0] == "@":
         user = args[0]
         user_id = get_user_id(user)
         if not user_id:
             message.reply_text(
-                "No idea who this user is. You'll be able to interact with them if "
-                "you reply to that person's message instead, or forward one of that user's messages."
+                "❌ ما اعرف هذا المستخدم!\n"
+                "جرب ترد على رسالته او تحولها لي."
             )
             return None, None
 
@@ -77,9 +78,8 @@ def extract_user_and_text(
     except BadRequest as excp:
         if excp.message in ("User_id_invalid", "Chat not found"):
             message.reply_text(
-                "I don't seem to have interacted with this user before - please forward a message from "
-                "them to give me control! (like a voodoo doll, I need a piece of them to be able "
-                "to execute certain commands...)"
+                "❌ ما تعاملت مع هذا المستخدم قبل كذا!\n"
+                "حول لي رسالة منه باش اقدر اتحكم فيه."
             )
         else:
             log.exception("Exception %s on user %s", excp.message, user_id)
@@ -99,12 +99,12 @@ def extract_text(message) -> str:
 
 def extract_unt_fedban(
     message: Message, args: List[str]
-) -> Tuple[Optional[int], Optional[str]]:  # sourcery no-metrics
+) -> Tuple[Optional[int], Optional[str]]:
     prev_message = message.reply_to_message
     split_text = message.text.split(None, 1)
 
     if len(split_text) < 2:
-        return id_from_reply(message)  # only option possible
+        return id_from_reply(message)
 
     text_to_parse = split_text[1]
 
@@ -112,19 +112,18 @@ def extract_unt_fedban(
 
     entities = list(message.parse_entities([MessageEntity.TEXT_MENTION]))
     ent = entities[0] if entities else None
-    # if entity offset matches (command end/text start) then all good
     if entities and ent and ent.offset == len(message.text) - len(text_to_parse):
         ent = entities[0]
         user_id = ent.user.id
-        text = message.text[ent.offset + ent.length :]
+        text = message.text[ent.offset + ent.length:]
 
     elif len(args) >= 1 and args[0][0] == "@":
         user = args[0]
         user_id = get_user_id(user)
         if not user_id and not isinstance(user_id, int):
             message.reply_text(
-                "I don't have users on my DB.You will be able to interact with them if "
-                "you reply to the person's message, or forward one of the user's message"
+                "❌ ما عندي هذا المستخدم في قاعدة البيانات!\n"
+                "رد على رسالته او حولها لي."
             )
             return None, None
 
@@ -153,10 +152,8 @@ def extract_unt_fedban(
             user_id, int
         ):
             message.reply_text(
-                "I seem to have never interacted with this user "
-                "Previously - please forward a message from them to give me control! "
-                "(Like a voodoo doll, I need a piece to be able to "
-                "run a certain command ...)"
+                "❌ ما تعاملت مع هذا المستخدم قبل!\n"
+                "حول لي رسالة منه باش اقدر اتعامل معاه."
             )
             return None, None
         elif excp.message != "Chat not found":
