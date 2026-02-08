@@ -29,6 +29,28 @@ from .helper_funcs.admin_status import (
 
 BLACKLIST_GROUP = -3
 
+# ==================== الأوامر العربية ====================
+ARABIC_BLACKLIST_COMMANDS = ["القائمة_السوداء", "المحظورات", "الكلمات_المحظورة"]
+ARABIC_ADDBL_COMMANDS = ["اضف_محظور", "اضافة_محظور", "حظر_كلمة"]
+ARABIC_RMBL_COMMANDS = ["حذف_محظور", "ازالة_محظور", "فك_حظر_كلمة"]
+ARABIC_BLMODE_COMMANDS = ["وضع_المحظورات", "نوع_المحظورات"]
+ARABIC_RMALLBL_COMMANDS = ["مسح_المحظورات", "حذف_كل_المحظورات"]
+
+# ترجمة أوضاع القائمة السوداء
+BLACKLIST_MODES_AR = {
+    "حذف": "del",
+    "delete": "del",
+    "انذار": "warn",
+    "تحذير": "warn",
+    "كتم": "mute",
+    "طرد": "kick",
+    "حظر": "ban",
+    "حظر_مؤقت": "tban",
+    "كتم_مؤقت": "tmute",
+    "لا_شي": "off",
+    "تعطيل": "off",
+}
+
 
 class BlacklistActions(IntEnum):
     default = 0
@@ -47,40 +69,95 @@ def blacklist(update, context):
     chat = update.effective_chat
     args = context.args
 
-    filter_list = "<b>Blacklist settings for {}</b>:\n".format(html.escape(chat.title))
+    filter_list = "<b>⚫ إعدادات القائمة السوداء لـ {}</b>:\n".format(html.escape(chat.title))
 
     getmode, getvalue = sql.get_blacklist_setting(chat.id)
-    bl_type = "Do nothing"
-    match getmode:
-        case 1:
-            bl_type = "Delete"
-        case 2:
-            bl_type = "Warn"
-        case 3:
-            bl_type = "Mute"
-        case 4:
-            bl_type = "Kick"
-        case 5:
-            bl_type = "Ban"
-        case 6:
-            bl_type = "Temporarily Ban for {}".format(getvalue)
-        case 7:
-            bl_type = "Temporarily Mute for {}".format(getvalue)
+    bl_type = get_bl_type_arabic(getmode, getvalue)
 
-    filter_list += "ㅤ<b>Current blacklist mode:</b>\n     {}\n".format(bl_type)
+    filter_list += "ㅤ<b>الوضع الحالي:</b>\n     {}\n".format(bl_type)
     all_blacklisted = sql.get_chat_blacklist(chat.id)
-    filter_list += "\nㅤ<b>Current blacklisted words (<i>{}</i>):</b>\n".format(len(all_blacklisted))
+    filter_list += "\nㅤ<b>الكلمات المحظورة (<i>{}</i>):</b>\n".format(len(all_blacklisted))
     for i in all_blacklisted:
         trigger = i[0]
         action = BlacklistActions(i[1]).name
-        filter_list += "  - <code>{}</code>\n    <b>Action:</b> {}\n".format(html.escape(trigger), action)
+        action_ar = get_action_arabic(action)
+        filter_list += "  - <code>{}</code>\n    <b>الإجراء:</b> {}\n".format(html.escape(trigger), action_ar)
 
     split_text = split_message(filter_list)
     for text in split_text:
         if len(all_blacklisted) == 0:
             send_message(
                 update.effective_message,
-                "No blacklisted words in <b>{}</b>!".format(chat.title),
+                "📭 ما في كلمات محظورة في <b>{}</b>!".format(chat.title),
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        send_message(update.effective_message, text, parse_mode=ParseMode.HTML)
+
+
+def get_bl_type_arabic(getmode, getvalue=""):
+    """تحويل نوع القائمة السوداء للعربي"""
+    match getmode:
+        case 0:
+            return "لا شي"
+        case 1:
+            return "حذف"
+        case 2:
+            return "إنذار"
+        case 3:
+            return "كتم"
+        case 4:
+            return "طرد"
+        case 5:
+            return "حظر"
+        case 6:
+            return "حظر مؤقت لمدة {}".format(getvalue)
+        case 7:
+            return "كتم مؤقت لمدة {}".format(getvalue)
+    return "لا شي"
+
+
+def get_action_arabic(action):
+    """تحويل الإجراء للعربي"""
+    actions = {
+        "default": "افتراضي",
+        "delete": "حذف",
+        "warn": "إنذار",
+        "mute": "كتم",
+        "kick": "طرد",
+        "ban": "حظر",
+    }
+    return actions.get(action, action)
+
+
+# ==================== معالج عربي لعرض القائمة السوداء ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_BLACKLIST_COMMANDS) + r')$'), group=3)
+@spamcheck
+@user_admin_check()
+@typing_action
+def arabic_blacklist(update, context):
+    chat = update.effective_chat
+
+    filter_list = "<b>⚫ إعدادات القائمة السوداء لـ {}</b>:\n".format(html.escape(chat.title))
+
+    getmode, getvalue = sql.get_blacklist_setting(chat.id)
+    bl_type = get_bl_type_arabic(getmode, getvalue)
+
+    filter_list += "ㅤ<b>الوضع الحالي:</b>\n     {}\n".format(bl_type)
+    all_blacklisted = sql.get_chat_blacklist(chat.id)
+    filter_list += "\nㅤ<b>الكلمات المحظورة (<i>{}</i>):</b>\n".format(len(all_blacklisted))
+    for i in all_blacklisted:
+        trigger = i[0]
+        action = BlacklistActions(i[1]).name
+        action_ar = get_action_arabic(action)
+        filter_list += "  - <code>{}</code>\n    <b>الإجراء:</b> {}\n".format(html.escape(trigger), action_ar)
+
+    split_text = split_message(filter_list)
+    for text in split_text:
+        if len(all_blacklisted) == 0:
+            send_message(
+                update.effective_message,
+                "📭 ما في كلمات محظورة في <b>{}</b>!".format(chat.title),
                 parse_mode=ParseMode.HTML,
             )
             return
@@ -109,21 +186,21 @@ def add_blacklist(update, _):
         for trigger in to_blacklist:
             bl, action = extract_bl_and_action(trigger)
             if not sql.add_to_blacklist(chat.id, bl, action.value):
-                return msg.reply_text("The maximum number of blacklists (100) has been reached for this chat.")
+                return msg.reply_text("⚠️ وصلت الحد الأقصى للقائمة السوداء (100) في هالمجموعة.")
             act = action.name
 
         if len(to_blacklist) == 1:
-            reply = "Added blacklist trigger: <code>{}</code> with <b>{}</b> action!"
+            reply = "✅ تم إضافة الكلمة المحظورة: <code>{}</code> بإجراء <b>{}</b>!"
             send_message(
                 update.effective_message,
                 reply.format(
-                    html.escape(bl), act
+                    html.escape(bl), get_action_arabic(act)
                 ),
                 parse_mode=ParseMode.HTML,
             )
 
         else:
-            reply = "Added blacklist <code>{}</code> in chat: <b>{}</b>!"
+            reply = "✅ تم إضافة <code>{}</code> كلمة محظورة في: <b>{}</b>!"
             send_message(
                 update.effective_message,
                 reply.format(
@@ -135,7 +212,66 @@ def add_blacklist(update, _):
     else:
         send_message(
             update.effective_message,
-            "Tell me which words you would like to add in blacklist.",
+            "⚠️ أخبرني أي كلمات تبي تضيفها للقائمة السوداء.",
+        )
+
+
+# ==================== معالج عربي لإضافة محظور ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_ADDBL_COMMANDS) + r')(\s|$)'), group=3)
+@spamcheck
+@connection_status
+@bot_admin_check(AdminPerms.CAN_RESTRICT_MEMBERS)
+@user_admin_check(AdminPerms.CAN_CHANGE_INFO)
+@typing_action
+def arabic_add_blacklist(update, _):
+    msg = update.effective_message
+    chat = update.effective_chat
+    
+    text = msg.text
+    for cmd in ARABIC_ADDBL_COMMANDS:
+        if text.startswith(cmd):
+            text = text[len(cmd):].strip()
+            break
+
+    chat_name = html.escape(chat.title)
+
+    act = BlacklistActions.default
+    bl = ""
+    if text:
+        to_blacklist: List[str] = list({trigger.strip() for trigger in text.split("\n") if trigger.strip()})
+
+        for trigger in to_blacklist:
+            bl, action = extract_bl_and_action(trigger)
+            if not sql.add_to_blacklist(chat.id, bl, action.value):
+                return msg.reply_text("⚠️ وصلت الحد الأقصى للقائمة السوداء (100) في هالمجموعة.")
+            act = action.name
+
+        if len(to_blacklist) == 1:
+            reply = "✅ تم إضافة الكلمة المحظورة: <code>{}</code> بإجراء <b>{}</b>!"
+            send_message(
+                msg,
+                reply.format(
+                    html.escape(bl), get_action_arabic(act)
+                ),
+                parse_mode=ParseMode.HTML,
+            )
+
+        else:
+            reply = "✅ تم إضافة <code>{}</code> كلمة محظورة في: <b>{}</b>!"
+            send_message(
+                msg,
+                reply.format(
+                    len(to_blacklist), chat_name
+                ),
+                parse_mode=ParseMode.HTML,
+            )
+
+    else:
+        send_message(
+            msg,
+            "⚠️ أخبرني أي كلمات تبي تضيفها للقائمة السوداء.\n\n"
+            "مثال: `اضف_محظور كلمة_سيئة`",
+            parse_mode=ParseMode.MARKDOWN,
         )
 
 
@@ -185,20 +321,20 @@ def unblacklist(update, _):
             if successful:
                 send_message(
                     update.effective_message,
-                    "Removed <code>{}</code> from blacklist in <b>{}</b>!".format(
+                    "✅ تم إزالة <code>{}</code> من القائمة السوداء في <b>{}</b>!".format(
                         html.escape(to_unblacklist[0]), chat_name
                     ),
                     parse_mode=ParseMode.HTML,
                 )
             else:
                 send_message(
-                    update.effective_message, "This is not a blacklist trigger!"
+                    update.effective_message, "⚠️ هذي مش كلمة محظورة!"
                 )
 
         elif successful == len(to_unblacklist):
             send_message(
                 update.effective_message,
-                "Removed <code>{}</code> from blacklist in <b>{}</b>!".format(
+                "✅ تم إزالة <code>{}</code> كلمة من القائمة السوداء في <b>{}</b>!".format(
                     successful, chat_name
                 ),
                 parse_mode=ParseMode.HTML,
@@ -207,17 +343,14 @@ def unblacklist(update, _):
         elif not successful:
             send_message(
                 update.effective_message,
-                "None of these triggers exist so it can't be removed.".format(
-                    successful, len(to_unblacklist) - successful
-                ),
+                "⚠️ ما لقيت أي من هالكلمات في القائمة السوداء!",
                 parse_mode=ParseMode.HTML,
             )
 
         else:
             send_message(
                 update.effective_message,
-                "Removed <code>{}</code> from blacklist. {} did not exist, "
-                "so were not removed.".format(
+                "✅ تم إزالة <code>{}</code> كلمة. {} ما كانت موجودة أصلاً.".format(
                     successful, len(to_unblacklist) - successful
                 ),
                 parse_mode=ParseMode.HTML,
@@ -225,7 +358,81 @@ def unblacklist(update, _):
     else:
         send_message(
             update.effective_message,
-            "Tell me which words you would like to remove from blacklist!",
+            "⚠️ أخبرني أي كلمات تبي تحذفها من القائمة السوداء!",
+        )
+
+
+# ==================== معالج عربي لحذف محظور ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_RMBL_COMMANDS) + r')(\s|$)'), group=3)
+@spamcheck
+@typing_action
+@connection_status
+@bot_admin_check(AdminPerms.CAN_RESTRICT_MEMBERS)
+@user_admin_check(AdminPerms.CAN_CHANGE_INFO)
+def arabic_unblacklist(update, _):
+    msg = update.effective_message
+    chat = update.effective_chat
+
+    text = msg.text
+    for cmd in ARABIC_RMBL_COMMANDS:
+        if text.startswith(cmd):
+            text = text[len(cmd):].strip()
+            break
+
+    chat_id = chat.id
+    chat_name = html.escape(chat.title)
+
+    if text:
+        to_unblacklist = list(
+            {
+                trigger.strip()
+                for trigger in text.split("\n")
+                if trigger.strip()
+            }
+        )
+
+        successful = 0
+        for trigger in to_unblacklist:
+            success = sql.rm_from_blacklist(chat_id, trigger.lower())
+            if success:
+                successful += 1
+
+        if len(to_unblacklist) == 1:
+            if successful:
+                send_message(
+                    msg,
+                    "✅ تم إزالة <code>{}</code> من القائمة السوداء في <b>{}</b>!".format(
+                        html.escape(to_unblacklist[0]), chat_name
+                    ),
+                    parse_mode=ParseMode.HTML,
+                )
+            else:
+                send_message(msg, "⚠️ هذي مش كلمة محظورة!")
+
+        elif successful == len(to_unblacklist):
+            send_message(
+                msg,
+                "✅ تم إزالة <code>{}</code> كلمة من القائمة السوداء!".format(successful),
+                parse_mode=ParseMode.HTML,
+            )
+
+        elif not successful:
+            send_message(msg, "⚠️ ما لقيت أي من هالكلمات في القائمة السوداء!")
+
+        else:
+            send_message(
+                msg,
+                "✅ تم إزالة <code>{}</code> كلمة. {} ما كانت موجودة.".format(
+                    successful, len(to_unblacklist) - successful
+                ),
+                parse_mode=ParseMode.HTML,
+            )
+    else:
+        send_message(
+            msg,
+            "⚠️ أخبرني أي كلمات تبي تحذفها من القائمة السوداء!\n\n"
+            "مثال: `حذف_محظور كلمة_سيئة`",
+            parse_mode=ParseMode.MARKDOWN,
         )
 
 
@@ -246,66 +453,74 @@ def blacklist_mode(update, context):  # sourcery no-metrics
     chat_name = html.escape(chat.title)
 
     if args:
-        if args[0].lower() in ["off", "nothing", "no"]:
-            settypeblacklist = "do nothing"
+        mode = args[0].lower()
+        
+        # تحويل العربي للإنجليزي
+        if mode in BLACKLIST_MODES_AR:
+            mode = BLACKLIST_MODES_AR[mode]
+        
+        if mode in ["off", "nothing", "no"]:
+            settypeblacklist = "لا شي"
             sql.set_blacklist_strength(chat_id, 0, "0")
-        elif args[0].lower() in ["del", "delete"]:
-            settypeblacklist = "will delete blacklisted message"
+        elif mode in ["del", "delete"]:
+            settypeblacklist = "حذف الرسالة المحظورة"
             sql.set_blacklist_strength(chat_id, 1, "0")
-        elif args[0].lower() == "warn":
-            settypeblacklist = "warn the sender"
+        elif mode == "warn":
+            settypeblacklist = "إنذار المرسل"
             sql.set_blacklist_strength(chat_id, 2, "0")
-        elif args[0].lower() == "mute":
-            settypeblacklist = "mute the sender"
+        elif mode == "mute":
+            settypeblacklist = "كتم المرسل"
             sql.set_blacklist_strength(chat_id, 3, "0")
-        elif args[0].lower() == "kick":
-            settypeblacklist = "kick the sender"
+        elif mode == "kick":
+            settypeblacklist = "طرد المرسل"
             sql.set_blacklist_strength(chat_id, 4, "0")
-        elif args[0].lower() == "ban":
-            settypeblacklist = "ban the sender"
+        elif mode == "ban":
+            settypeblacklist = "حظر المرسل"
             sql.set_blacklist_strength(chat_id, 5, "0")
-        elif args[0].lower() == "tban":
+        elif mode == "tban":
             if len(args) == 1:
-                teks = """It looks like you tried to set time value for blacklist but you didn't specified time; Try, `/blacklistmode tban <timevalue>`.
+                teks = """⚠️ يبدو إنك حاولت تحدد وقت للقائمة السوداء لكن ما حددت المدة؛ جرب:
+`/blacklistmode tban <المدة>` أو `وضع_المحظورات حظر_مؤقت <المدة>`
 
-Examples of time value: 4m = 4 minutes, 3h = 3 hours, 6d = 6 days, 5w = 5 weeks."""
+أمثلة: 4m = 4 دقائق، 3h = 3 ساعات، 6d = 6 أيام، 5w = 5 أسابيع."""
                 send_message(update.effective_message, teks, parse_mode="markdown")
                 return ""
             restime = extract_time(msg, args[1])
             if not restime:
-                teks = """Invalid time value!
-Example of time value: 4m = 4 minutes, 3h = 3 hours, 6d = 6 days, 5w = 5 weeks."""
+                teks = """⚠️ قيمة وقت غير صحيحة!
+أمثلة: 4m = 4 دقائق، 3h = 3 ساعات، 6d = 6 أيام، 5w = 5 أسابيع."""
                 send_message(update.effective_message, teks, parse_mode="markdown")
                 return ""
-            settypeblacklist = "temporarily ban for {}".format(args[1])
+            settypeblacklist = "حظر مؤقت لمدة {}".format(args[1])
             sql.set_blacklist_strength(chat_id, 6, str(args[1]))
-        elif args[0].lower() == "tmute":
+        elif mode == "tmute":
             if len(args) == 1:
-                teks = """It looks like you tried to set time value for blacklist but you didn't specified  time; try, `/blacklistmode tmute <timevalue>`.
+                teks = """⚠️ يبدو إنك حاولت تحدد وقت للقائمة السوداء لكن ما حددت المدة؛ جرب:
+`/blacklistmode tmute <المدة>` أو `وضع_المحظورات كتم_مؤقت <المدة>`
 
-Examples of time value: 4m = 4 minutes, 3h = 3 hours, 6d = 6 days, 5w = 5 weeks."""
+أمثلة: 4m = 4 دقائق، 3h = 3 ساعات، 6d = 6 أيام، 5w = 5 أسابيع."""
                 send_message(update.effective_message, teks, parse_mode="markdown")
                 return ""
             restime = extract_time(msg, args[1])
             if not restime:
-                teks = """Invalid time value!
-Examples of time value: 4m = 4 minutes, 3h = 3 hours, 6d = 6 days, 5w = 5 weeks."""
+                teks = """⚠️ قيمة وقت غير صحيحة!
+أمثلة: 4m = 4 دقائق، 3h = 3 ساعات، 6d = 6 أيام، 5w = 5 أسابيع."""
                 send_message(update.effective_message, teks, parse_mode="markdown")
                 return ""
-            settypeblacklist = "temporarily mute for {}".format(args[1])
+            settypeblacklist = "كتم مؤقت لمدة {}".format(args[1])
             sql.set_blacklist_strength(chat_id, 7, str(args[1]))
         else:
             send_message(
                 update.effective_message,
-                "I only understand: off/del/warn/ban/kick/mute/tban/tmute!",
+                "⚠️ أنا أفهم بس: تعطيل/حذف/انذار/حظر/طرد/كتم/حظر_مؤقت/كتم_مؤقت!",
             )
             return ""
-        text = "Changed blacklist mode: `{}`!".format(settypeblacklist)
+        text = "✅ تم تغيير وضع القائمة السوداء: `{}`!".format(settypeblacklist)
         send_message(update.effective_message, text, parse_mode="markdown")
         return (
             "<b>{}:</b>\n"
-            "<b>Admin:</b> {}\n"
-            "Changed the blacklist mode. will {}.".format(
+            "<b>المشرف:</b> {}\n"
+            "تم تغيير وضع القائمة السوداء إلى: {}.".format(
                 html.escape(chat.title),
                 mention_html(user.id, user.first_name),
                 settypeblacklist,
@@ -313,24 +528,109 @@ Examples of time value: 4m = 4 minutes, 3h = 3 hours, 6d = 6 days, 5w = 5 weeks.
         )
     else:
         getmode, getvalue = sql.get_blacklist_setting(chat.id)
-        bl_type = "Do nothing"
-        match getmode:
-            case 1:
-                bl_type = "Delete"
-            case 2:
-                bl_type = "Warn"
-            case 3:
-                bl_type = "Mute"
-            case 4:
-                bl_type = "Kick"
-            case 5:
-                bl_type = "Ban"
-            case 6:
-                bl_type = "Temporarily Ban for {}".format(getvalue)
-            case 7:
-                bl_type = "Temporarily Mute for {}".format(getvalue)
-        text = "Current blacklistmode: *{}*.".format(bl_type)
+        bl_type = get_bl_type_arabic(getmode, getvalue)
+        text = "📊 وضع القائمة السوداء الحالي: *{}*.".format(bl_type)
         send_message(update.effective_message, text, parse_mode=ParseMode.MARKDOWN)
+    return ""
+
+
+# ==================== معالج عربي لوضع المحظورات ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_BLMODE_COMMANDS) + r')(\s|$)'), group=3)
+@spamcheck
+@typing_action
+@connection_status
+@bot_admin_check(AdminPerms.CAN_RESTRICT_MEMBERS)
+@user_admin_check(AdminPerms.CAN_CHANGE_INFO)
+@loggable
+def arabic_blacklist_mode(update, context):
+    chat = update.effective_chat
+    user = update.effective_user
+    msg = update.effective_message
+
+    text = msg.text
+    for cmd in ARABIC_BLMODE_COMMANDS:
+        if text.startswith(cmd):
+            text = text[len(cmd):].strip()
+            break
+
+    chat_id = chat.id
+
+    if text:
+        args = text.split()
+        mode = args[0].lower()
+        
+        # تحويل العربي للإنجليزي
+        if mode in BLACKLIST_MODES_AR:
+            mode = BLACKLIST_MODES_AR[mode]
+        
+        if mode in ["off", "nothing", "no", "لا_شي", "تعطيل"]:
+            settypeblacklist = "لا شي"
+            sql.set_blacklist_strength(chat_id, 0, "0")
+        elif mode in ["del", "delete", "حذف"]:
+            settypeblacklist = "حذف الرسالة"
+            sql.set_blacklist_strength(chat_id, 1, "0")
+        elif mode in ["warn", "انذار", "تحذير"]:
+            settypeblacklist = "إنذار المرسل"
+            sql.set_blacklist_strength(chat_id, 2, "0")
+        elif mode in ["mute", "كتم"]:
+            settypeblacklist = "كتم المرسل"
+            sql.set_blacklist_strength(chat_id, 3, "0")
+        elif mode in ["kick", "طرد"]:
+            settypeblacklist = "طرد المرسل"
+            sql.set_blacklist_strength(chat_id, 4, "0")
+        elif mode in ["ban", "حظر"]:
+            settypeblacklist = "حظر المرسل"
+            sql.set_blacklist_strength(chat_id, 5, "0")
+        elif mode in ["tban", "حظر_مؤقت"]:
+            if len(args) == 1:
+                msg.reply_text("⚠️ حدد المدة!\nمثال: وضع_المحظورات حظر_مؤقت 1h")
+                return ""
+            restime = extract_time(msg, args[1])
+            if not restime:
+                msg.reply_text("⚠️ مدة غير صحيحة!")
+                return ""
+            settypeblacklist = "حظر مؤقت لمدة {}".format(args[1])
+            sql.set_blacklist_strength(chat_id, 6, str(args[1]))
+        elif mode in ["tmute", "كتم_مؤقت"]:
+            if len(args) == 1:
+                msg.reply_text("⚠️ حدد المدة!\nمثال: وضع_المحظورات كتم_مؤقت 1h")
+                return ""
+            restime = extract_time(msg, args[1])
+            if not restime:
+                msg.reply_text("⚠️ مدة غير صحيحة!")
+                return ""
+            settypeblacklist = "كتم مؤقت لمدة {}".format(args[1])
+            sql.set_blacklist_strength(chat_id, 7, str(args[1]))
+        else:
+            send_message(msg, "⚠️ أنا أفهم بس: تعطيل/حذف/انذار/حظر/طرد/كتم/حظر_مؤقت/كتم_مؤقت!")
+            return ""
+        
+        msg.reply_text("✅ تم تغيير وضع القائمة السوداء: `{}`!".format(settypeblacklist), parse_mode="markdown")
+        return (
+            "<b>{}:</b>\n"
+            "<b>المشرف:</b> {}\n"
+            "تم تغيير وضع القائمة السوداء إلى: {}.".format(
+                html.escape(chat.title),
+                mention_html(user.id, user.first_name),
+                settypeblacklist,
+            )
+        )
+    else:
+        getmode, getvalue = sql.get_blacklist_setting(chat.id)
+        bl_type = get_bl_type_arabic(getmode, getvalue)
+        msg.reply_text(
+            "📊 وضع القائمة السوداء الحالي: *{}*.\n\n"
+            "الأوضاع المتاحة:\n"
+            "• تعطيل - لا شي\n"
+            "• حذف - حذف الرسالة\n"
+            "• انذار - إنذار المرسل\n"
+            "• كتم - كتم المرسل\n"
+            "• طرد - طرد المرسل\n"
+            "• حظر - حظر المرسل\n"
+            "• حظر_مؤقت 1h - حظر مؤقت\n"
+            "• كتم_مؤقت 1h - كتم مؤقت".format(bl_type),
+            parse_mode=ParseMode.MARKDOWN
+        )
     return ""
 
 
@@ -375,7 +675,7 @@ def del_blacklist(update: Update, context: CallbackContext):  # sourcery no-metr
                         warn(
                             update.effective_user,
                             update,
-                            ("Using blacklisted trigger: {}".format(trigger)),
+                            ("استخدام كلمة محظورة: {}".format(trigger)),
                             message,
                             update.effective_user,
                         )
@@ -389,7 +689,7 @@ def del_blacklist(update: Update, context: CallbackContext):  # sourcery no-metr
                         )
                         bot.sendMessage(
                             chat.id,
-                            f"Muted {user.first_name} for using Blacklisted word: {trigger}!",
+                            f"🔇 تم كتم {user.first_name} بسبب استخدام كلمة محظورة: {trigger}!",
                         )
                         return
                     case 4:
@@ -398,7 +698,7 @@ def del_blacklist(update: Update, context: CallbackContext):  # sourcery no-metr
                         if res:
                             bot.sendMessage(
                                 chat.id,
-                                f"Kicked {user.first_name} for using Blacklisted word: {trigger}!",
+                                f"👢 تم طرد {user.first_name} بسبب استخدام كلمة محظورة: {trigger}!",
                             )
                         return
                     case 5:
@@ -406,7 +706,7 @@ def del_blacklist(update: Update, context: CallbackContext):  # sourcery no-metr
                         chat.ban_member(user.id)
                         bot.sendMessage(
                             chat.id,
-                            f"Banned {user.first_name} for using Blacklisted word: {trigger}",
+                            f"🚫 تم حظر {user.first_name} بسبب استخدام كلمة محظورة: {trigger}",
                         )
                         return
                     case 6:
@@ -415,7 +715,7 @@ def del_blacklist(update: Update, context: CallbackContext):  # sourcery no-metr
                         chat.ban_member(user.id, until_date=bantime)
                         bot.sendMessage(
                             chat.id,
-                            f"Banned {user.first_name} until '{value}' for using Blacklisted word: {trigger}!",
+                            f"🚫 تم حظر {user.first_name} لمدة '{value}' بسبب استخدام كلمة محظورة: {trigger}!",
                         )
                         return
                     case 7:
@@ -429,7 +729,7 @@ def del_blacklist(update: Update, context: CallbackContext):  # sourcery no-metr
                         )
                         bot.sendMessage(
                             chat.id,
-                            f"Muted {user.first_name} until '{value}' for using Blacklisted word: {trigger}!",
+                            f"🔇 تم كتم {user.first_name} لمدة '{value}' بسبب استخدام كلمة محظورة: {trigger}!",
                         )
                         return
             except BadRequest as excp:
@@ -446,21 +746,50 @@ def rmall_filters(update, context):
     member = chat.get_member(user.id)
     if member.status != "creator" and user.id not in SUDO_USERS:
         update.effective_message.reply_text(
-            "Only the chat owner can clear all blacklists at once."
+            "⚠️ بس مالك المجموعة يقدر يمسح كل القائمة السوداء مرة وحدة."
         )
     else:
         buttons = InlineKeyboardMarkup(
             [
                 [
                     InlineKeyboardButton(
-                        text="Remove all Blacklists", callback_data="blacklists_rmall"
+                        text="🗑 حذف كل المحظورات", callback_data="blacklists_rmall"
                     )
                 ],
-                [InlineKeyboardButton(text="Cancel", callback_data="blacklists_cancel")],
+                [InlineKeyboardButton(text="❌ إلغاء", callback_data="blacklists_cancel")],
             ]
         )
         update.effective_message.reply_text(
-            f"Are you sure you would like to stop ALL blacklists in {chat.title}? This action cannot be undone.",
+            f"⚠️ هل أنت متأكد تبي تحذف كل القائمة السوداء في {chat.title}؟ هالعملية ما تقدر تتراجع عنها!",
+            reply_markup=buttons,
+            parse_mode=ParseMode.MARKDOWN,
+        )
+
+
+# ==================== معالج عربي لمسح كل المحظورات ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_RMALLBL_COMMANDS) + r')$'), group=3)
+@spamcheck
+def arabic_rmall_filters(update, context):
+    chat = update.effective_chat
+    user = update.effective_user
+    member = chat.get_member(user.id)
+    if member.status != "creator" and user.id not in SUDO_USERS:
+        update.effective_message.reply_text(
+            "⚠️ بس مالك المجموعة يقدر يمسح كل القائمة السوداء مرة وحدة."
+        )
+    else:
+        buttons = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        text="🗑 حذف كل المحظورات", callback_data="blacklists_rmall"
+                    )
+                ],
+                [InlineKeyboardButton(text="❌ إلغاء", callback_data="blacklists_cancel")],
+            ]
+        )
+        update.effective_message.reply_text(
+            f"⚠️ هل أنت متأكد تبي تحذف كل القائمة السوداء في {chat.title}؟ هالعملية ما تقدر تتراجع عنها!",
             reply_markup=buttons,
             parse_mode=ParseMode.MARKDOWN,
         )
@@ -478,7 +807,7 @@ def rmall_callback(update, context) -> str:
         if member.status == "creator" or query.from_user.id in SUDO_USERS:
             allfilters = sql.get_chat_blacklist(chat.id)
             if not allfilters:
-                msg.edit_text("No blacklists in this chat, nothing to stop!")
+                msg.edit_text("📭 ما في كلمات محظورة في هالمجموعة!")
                 return ""
 
             count = 0
@@ -486,35 +815,34 @@ def rmall_callback(update, context) -> str:
             for x in allfilters:
                 count += 1
                 filterlist.append(x)
-            print(filterlist)
             for i in filterlist:
                 sql.rm_from_blacklist(chat.id, i[0])
 
-            msg.edit_text(f"Cleaned {count} bl in {chat.title}")
+            msg.edit_text(f"✅ تم حذف {count} كلمة محظورة في {chat.title}")
 
             log_message = (
                 f"<b>{html.escape(chat.title)}:</b>\n"
-                f"#CLEAREDALLBLACKLISTS\n"
-                f"<b>Admin:</b> {mention_html(user.id, html.escape(user.first_name))}"
+                f"#مسح_القائمة_السوداء\n"
+                f"<b>المشرف:</b> {mention_html(user.id, html.escape(user.first_name))}"
             )
             return log_message
 
         if member.status == "administrator":
-            query.answer("Only owner of the chat can do this.")
+            query.answer("⚠️ بس مالك المجموعة يقدر يسوي هالشي.")
             return ""
 
         if member.status == "member":
-            query.answer("You need to be admin to do this.")
+            query.answer("⚠️ لازم تكون مشرف باش تسوي هالشي.")
             return ""
     elif query.data == "blacklists_cancel":
         if member.status == "creator" or query.from_user.id in SUDO_USERS:
-            msg.edit_text("Clearing of all filters has been cancelled.")
+            msg.edit_text("❌ تم إلغاء العملية.")
             return ""
         if member.status == "administrator":
-            query.answer("Only owner of the chat can do this.")
+            query.answer("⚠️ بس مالك المجموعة يقدر يسوي هالشي.")
             return ""
         if member.status == "member":
-            query.answer("You need to be admin to do this.")
+            query.answer("⚠️ لازم تكون مشرف باش تسوي هالشي.")
             return ""
 
 
@@ -531,16 +859,16 @@ def __migrate__(old_chat_id, new_chat_id):
 
 def __chat_settings__(chat_id, user_id):
     blacklisted = sql.num_blacklist_chat_filters(chat_id)
-    return "There are {} blacklisted words.".format(blacklisted)
+    return "في {} كلمة محظورة.".format(blacklisted)
 
 
 def __stats__():
-    return "• {} blacklist triggers, across {} chats.".format(
+    return "• {} كلمة محظورة، في {} مجموعة.".format(
         sql.num_blacklist_filters(), sql.num_blacklist_filter_chats()
     )
 
 
-__mod_name__ = "Blacklists"
+__mod_name__ = "القائمة السوداء"
 
 from .language import gs
 
