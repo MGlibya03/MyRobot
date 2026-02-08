@@ -28,6 +28,12 @@ from .helper_funcs.admin_status import (
 
 ad = AlphabetDetector()
 
+# ==================== الأوامر العربية ====================
+ARABIC_LOCK_COMMANDS = ["قفل", "اقفل", "اغلق"]
+ARABIC_UNLOCK_COMMANDS = ["فتح", "افتح", "فك_القفل"]
+ARABIC_LOCKS_COMMANDS = ["الاقفال", "الأقفال", "قائمة_الاقفال"]
+ARABIC_LOCKTYPES_COMMANDS = ["انواع_القفل", "أنواع_القفل", "قائمة_القفل"]
+
 LOCK_TYPES = {
     "audio": Filters.audio,
     "voice": Filters.voice,
@@ -55,6 +61,40 @@ LOCK_TYPES = {
     "txt" : Filters.document.mime_type("text/plain"),
     "xml" : Filters.document.mime_type("application/xml"),
     "zip" : Filters.document.mime_type("application/zip"),
+}
+
+# ترجمة أنواع القفل للعربية
+LOCK_TYPES_AR = {
+    "صوت": "audio",
+    "صوتي": "voice",
+    "ملف": "document",
+    "مستند": "document",
+    "فيديو": "video",
+    "جهة_اتصال": "contact",
+    "صورة": "photo",
+    "روابط": "url",
+    "رابط": "url",
+    "بوتات": "bots",
+    "بوت": "bots",
+    "تحويل": "forward",
+    "توجيه": "forward",
+    "لعبة": "game",
+    "موقع": "location",
+    "نرد": "egame",
+    "عربي": "rtl",
+    "ازرار": "button",
+    "انلاين": "inline",
+    "ملصقات": "sticker",
+    "ملصق": "sticker",
+    "رسائل": "messages",
+    "وسائط": "media",
+    "استفتاء": "poll",
+    "تصويت": "poll",
+    "معاينة": "previews",
+    "معلومات": "info",
+    "دعوة": "invite",
+    "تثبيت": "pin",
+    "الكل": "all",
 }
 
 LOCK_CHAT_RESTRICTION = {
@@ -140,15 +180,33 @@ def unrestr_members(
         except TelegramError:
             pass
 
+
 @kigcmd(command='locktypes')
 @spamcheck
 def locktypes(update, context):
     update.effective_message.reply_text(
         "\n • ".join(
-            ["Locks available: "]
+            ["🔐 أنواع الأقفال المتاحة: "]
             + sorted(list(LOCK_TYPES) + list(LOCK_CHAT_RESTRICTION))
         )
     )
+
+
+# ==================== معالج عربي لأنواع القفل ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_LOCKTYPES_COMMANDS) + r')$'), group=3)
+@spamcheck
+def arabic_locktypes(update, context):
+    lock_list = sorted(list(LOCK_TYPES) + list(LOCK_CHAT_RESTRICTION))
+    arabic_list = list(LOCK_TYPES_AR.keys())
+    
+    msg = "🔐 *أنواع الأقفال المتاحة:*\n\n"
+    msg += "*بالإنجليزي:*\n"
+    msg += "\n • ".join([""] + lock_list)
+    msg += "\n\n*بالعربي:*\n"
+    msg += "\n • ".join([""] + arabic_list)
+    
+    update.effective_message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+
 
 @kigcmd(command='lock', pass_args=True)
 @spamcheck
@@ -165,19 +223,19 @@ def lock(update, context) -> str:  # sourcery no-metrics
         if len(args) >= 1:
             ltype = args[0].lower()
             if ltype == "anonchannel":
-                text = "`anonchannel` is not a lock, please use `/antichannel on` to restrict channels"
+                text = "⚠️ `anonchannel` مش قفل، استخدم `/antichannel on` لتقييد القنوات"
                 send_message(update.effective_message, text, parse_mode = "markdown")
             elif ltype in LOCK_TYPES:
 
-                text = "Locked {} for non-admins!".format(ltype)
+                text = "🔒 تم قفل {} لغير المشرفين!".format(ltype)
                 sql.update_lock(chat.id, ltype, locked=True)
                 send_message(update.effective_message, text, parse_mode="markdown")
 
                 return (
                     "<b>{}:</b>"
-                    "\n#LOCK"
-                    "\n<b>Admin:</b> {}"
-                    "\nLocked <code>{}</code>.".format(
+                    "\n#قفل"
+                    "\n<b>المشرف:</b> {}"
+                    "\nتم قفل <code>{}</code>.".format(
                         html.escape(chat.title),
                         mention_html(user.id, user.first_name),
                         ltype,
@@ -185,7 +243,7 @@ def lock(update, context) -> str:  # sourcery no-metrics
                 )
 
             elif ltype in LOCK_CHAT_RESTRICTION:
-                text = "Locked {} for all non-admins!".format(ltype)
+                text = "🔒 تم قفل {} لكل غير المشرفين!".format(ltype)
                 current_permission = context.bot.getChat(chat.id).permissions
                 context.bot.set_chat_permissions(
                     chat_id=chat.id,
@@ -198,9 +256,9 @@ def lock(update, context) -> str:  # sourcery no-metrics
                 send_message(update.effective_message, text, parse_mode="markdown")
                 return (
                     "<b>{}:</b>"
-                    "\n#Permission_LOCK"
-                    "\n<b>Admin:</b> {}"
-                    "\nLocked <code>{}</code>.".format(
+                    "\n#قفل_صلاحيات"
+                    "\n<b>المشرف:</b> {}"
+                    "\nتم قفل <code>{}</code>.".format(
                         html.escape(chat.title),
                         mention_html(user.id, user.first_name),
                         ltype,
@@ -210,18 +268,90 @@ def lock(update, context) -> str:  # sourcery no-metrics
             else:
                 send_message(
                     update.effective_message,
-                    "What are you trying to lock...? Try /locktypes for the list of lockables",
+                    "⚠️ شو تبي تقفل...؟ جرب /locktypes أو انواع_القفل لعرض قائمة الأقفال",
                 )
         else:
-            send_message(update.effective_message, "What are you trying to lock...?")
+            send_message(update.effective_message, "⚠️ شو تبي تقفل...؟")
 
     else:
         send_message(
             update.effective_message,
-            "I am not administrator or haven't got enough rights.",
+            "⚠️ أنا مش مشرف أو ما عندي صلاحيات كافية!",
         )
 
     return ""
+
+
+# ==================== معالج عربي للقفل ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_LOCK_COMMANDS) + r')(\s|$)'), group=3)
+@spamcheck
+@connection_status
+@typing_action
+@bot_admin_check()
+@user_admin_check(AdminPerms.CAN_CHANGE_INFO, allow_mods=True)
+@loggable
+def arabic_lock(update, context) -> str:
+    message = update.effective_message
+    chat = update.effective_chat
+    user = update.effective_user
+    
+    text = message.text
+    for cmd in ARABIC_LOCK_COMMANDS:
+        if text.startswith(cmd):
+            text = text[len(cmd):].strip()
+            break
+    
+    if not text:
+        send_message(message, "⚠️ شو تبي تقفل؟\n\nمثال: قفل صورة\nأو: قفل روابط")
+        return ""
+    
+    ltype = text.lower()
+    
+    # تحويل العربي للإنجليزي
+    if ltype in LOCK_TYPES_AR:
+        ltype = LOCK_TYPES_AR[ltype]
+    
+    if bot_is_admin(chat, AdminPerms.CAN_DELETE_MESSAGES):
+        if ltype in LOCK_TYPES:
+            sql.update_lock(chat.id, ltype, locked=True)
+            send_message(message, f"🔒 تم قفل {ltype} لغير المشرفين!")
+            return (
+                "<b>{}:</b>"
+                "\n#قفل"
+                "\n<b>المشرف:</b> {}"
+                "\nتم قفل <code>{}</code>.".format(
+                    html.escape(chat.title),
+                    mention_html(user.id, user.first_name),
+                    ltype,
+                )
+            )
+        elif ltype in LOCK_CHAT_RESTRICTION:
+            current_permission = context.bot.getChat(chat.id).permissions
+            context.bot.set_chat_permissions(
+                chat_id=chat.id,
+                permissions=get_permission_list(
+                    ast.literal_eval(str(current_permission)),
+                    LOCK_CHAT_RESTRICTION[ltype],
+                ),
+            )
+            send_message(message, f"🔒 تم قفل {ltype} لكل غير المشرفين!")
+            return (
+                "<b>{}:</b>"
+                "\n#قفل_صلاحيات"
+                "\n<b>المشرف:</b> {}"
+                "\nتم قفل <code>{}</code>.".format(
+                    html.escape(chat.title),
+                    mention_html(user.id, user.first_name),
+                    ltype,
+                )
+            )
+        else:
+            send_message(message, "⚠️ نوع القفل هذا مش موجود!\nجرب: انواع_القفل")
+    else:
+        send_message(message, "⚠️ أنا مش مشرف أو ما عندي صلاحيات كافية!")
+    
+    return ""
+
 
 @kigcmd(command='unlock', pass_args=True)
 @spamcheck
@@ -237,17 +367,17 @@ def unlock(update, context) -> str:  # sourcery no-metrics
         if len(args) >= 1:
             ltype = args[0].lower()
             if ltype == "anonchannel":
-                text = "`anonchannel` is not a lock, please use `/antichannel off` to disable restricting channels"
+                text = "⚠️ `anonchannel` مش قفل، استخدم `/antichannel off` لتعطيل تقييد القنوات"
                 send_message(update.effective_message, text, parse_mode="markdown")
             elif ltype in LOCK_TYPES:
-                text = "Unlocked {} for everyone!".format(ltype)
+                text = "🔓 تم فتح {} للجميع!".format(ltype)
                 sql.update_lock(chat.id, ltype, locked=False)
                 send_message(update.effective_message, text, parse_mode="markdown")
                 return (
                     "<b>{}:</b>"
-                    "\n#UNLOCK"
-                    "\n<b>Admin:</b> {}"
-                    "\nUnlocked <code>{}</code>.".format(
+                    "\n#فتح_قفل"
+                    "\n<b>المشرف:</b> {}"
+                    "\nتم فتح <code>{}</code>.".format(
                         html.escape(chat.title),
                         mention_html(user.id, user.first_name),
                         ltype,
@@ -255,7 +385,7 @@ def unlock(update, context) -> str:  # sourcery no-metrics
                 )
 
             elif ltype in UNLOCK_CHAT_RESTRICTION:
-                text = "Unlocked {} for everyone!".format(ltype)
+                text = "🔓 تم فتح {} للجميع!".format(ltype)
 
                 current_permission = context.bot.getChat(chat.id).permissions
                 context.bot.set_chat_permissions(
@@ -270,9 +400,9 @@ def unlock(update, context) -> str:  # sourcery no-metrics
 
                 return (
                     "<b>{}:</b>"
-                    "\n#UNLOCK"
-                    "\n<b>Admin:</b> {}"
-                    "\nUnlocked <code>{}</code>.".format(
+                    "\n#فتح_قفل"
+                    "\n<b>المشرف:</b> {}"
+                    "\nتم فتح <code>{}</code>.".format(
                         html.escape(chat.title),
                         mention_html(user.id, user.first_name),
                         ltype,
@@ -281,13 +411,82 @@ def unlock(update, context) -> str:  # sourcery no-metrics
             else:
                 send_message(
                     update.effective_message,
-                    "What are you trying to unlock...? Try /locktypes for the list of lockables.",
+                    "⚠️ شو تبي تفتح...؟ جرب /locktypes أو انواع_القفل لعرض قائمة الأقفال.",
                 )
 
         else:
-            send_message(update.effective_message, "What are you trying to unlock...?")
+            send_message(update.effective_message, "⚠️ شو تبي تفتح...؟")
 
     return ""
+
+
+# ==================== معالج عربي للفتح ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_UNLOCK_COMMANDS) + r')(\s|$)'), group=3)
+@spamcheck
+@bot_admin_check()
+@typing_action
+@user_admin_check()
+@loggable
+def arabic_unlock(update, context) -> str:
+    message = update.effective_message
+    chat = update.effective_chat
+    user = update.effective_user
+    
+    text = message.text
+    for cmd in ARABIC_UNLOCK_COMMANDS:
+        if text.startswith(cmd):
+            text = text[len(cmd):].strip()
+            break
+    
+    if not text:
+        send_message(message, "⚠️ شو تبي تفتح؟\n\nمثال: فتح صورة\nأو: فتح روابط")
+        return ""
+    
+    ltype = text.lower()
+    
+    # تحويل العربي للإنجليزي
+    if ltype in LOCK_TYPES_AR:
+        ltype = LOCK_TYPES_AR[ltype]
+    
+    if user_is_admin(update, user.id, allow_moderators=True):
+        if ltype in LOCK_TYPES:
+            sql.update_lock(chat.id, ltype, locked=False)
+            send_message(message, f"🔓 تم فتح {ltype} للجميع!")
+            return (
+                "<b>{}:</b>"
+                "\n#فتح_قفل"
+                "\n<b>المشرف:</b> {}"
+                "\nتم فتح <code>{}</code>.".format(
+                    html.escape(chat.title),
+                    mention_html(user.id, user.first_name),
+                    ltype,
+                )
+            )
+        elif ltype in UNLOCK_CHAT_RESTRICTION:
+            current_permission = context.bot.getChat(chat.id).permissions
+            context.bot.set_chat_permissions(
+                chat_id=chat.id,
+                permissions=get_permission_list(
+                    ast.literal_eval(str(current_permission)),
+                    UNLOCK_CHAT_RESTRICTION[ltype],
+                ),
+            )
+            send_message(message, f"🔓 تم فتح {ltype} للجميع!")
+            return (
+                "<b>{}:</b>"
+                "\n#فتح_قفل"
+                "\n<b>المشرف:</b> {}"
+                "\nتم فتح <code>{}</code>.".format(
+                    html.escape(chat.title),
+                    mention_html(user.id, user.first_name),
+                    ltype,
+                )
+            )
+        else:
+            send_message(message, "⚠️ نوع القفل هذا مش موجود!\nجرب: انواع_القفل")
+    
+    return ""
+
 
 @kigmsg((Filters.all & Filters.chat_type.groups), group=PERM_GROUP)
 @user_not_admin_check
@@ -304,8 +503,6 @@ def del_lockables(update, context):  # sourcery no-metrics
                     check = ad.detect_alphabet(u"{}".format(message.caption))
                     if "ARABIC" in check:
                         try:
-                            # replyyy = "This action is restricted to admins only!"
-                            # message.reply_text(replyyy)
                             message.delete()
                         except BadRequest as excp:
                             if excp.message != "Message to delete not found":
@@ -315,8 +512,6 @@ def del_lockables(update, context):  # sourcery no-metrics
                     check = ad.detect_alphabet(u"{}".format(message.text))
                     if "ARABIC" in check:
                         try:
-                            # replyyy = "This action is restricted to admins only!"
-                            # message.reply_text(replyyy)
                             message.delete()
                         except BadRequest as excp:
                             if excp.message != "Message to delete not found":
@@ -331,8 +526,6 @@ def del_lockables(update, context):  # sourcery no-metrics
                 and message.reply_markup.inline_keyboard
             ):
                 try:
-                    # replyyy = "This action is restricted to admins only!"
-                    # message.reply_text(replyyy)
                     message.delete()
                 except BadRequest as excp:
                     if excp.message != "Message to delete not found":
@@ -347,8 +540,6 @@ def del_lockables(update, context):  # sourcery no-metrics
                 and message.via_bot
             ):
                 try:
-                    # replyyy = "This action is restricted to admins only!"
-                    # message.reply_text(replyyy)
                     message.delete()
                 except BadRequest as excp:
                     if excp.message != "Message to delete not found":
@@ -367,21 +558,19 @@ def del_lockables(update, context):  # sourcery no-metrics
                         if not bot_is_admin(chat, AdminPerms.CAN_RESTRICT_MEMBERS):
                             send_message(
                                 update.effective_message,
-                                "I see a bot and I've been told to stop them from joining..."
-                                "but I'm not admin!",
+                                "⚠️ شفت بوت وقالولي أوقفه من الدخول... "
+                                "لكن أنا مش مشرف!",
                             )
                             return
 
                         chat.ban_member(new_mem.id)
                         send_message(
                             update.effective_message,
-                            "Only admins are allowed to add bots in this chat! Get outta here.",
+                            "🤖 بس المشرفين يقدروا يضيفوا بوتات هني! طلع برا.",
                         )
                         break
             else:
                 try:
-                    # replyyy = "This action is restricted to admins only!"
-                    # message.reply_text(replyyy)
                     message.delete()
                 except BadRequest as excp:
                     if excp.message != "Message to delete not found":
@@ -396,24 +585,24 @@ def build_lock_message(chat_id):
     locklist = []
     permslist = []
     if locks:
-        res += "*" + "These are the current locks in this Chat:" + "*"
-        locklist.append("sticker = `{}`".format(locks.sticker))
-        locklist.append("audio = `{}`".format(locks.audio))
-        locklist.append("voice = `{}`".format(locks.voice))
-        locklist.append("document = `{}`".format(locks.document))
-        locklist.append("video = `{}`".format(locks.video))
-        locklist.append("contact = `{}`".format(locks.contact))
-        locklist.append("photo = `{}`".format(locks.photo))
+        res += "*" + "🔐 الأقفال الحالية في المجموعة:" + "*"
+        locklist.append("ملصقات (sticker) = `{}`".format(locks.sticker))
+        locklist.append("صوت (audio) = `{}`".format(locks.audio))
+        locklist.append("صوتي (voice) = `{}`".format(locks.voice))
+        locklist.append("مستند (document) = `{}`".format(locks.document))
+        locklist.append("فيديو (video) = `{}`".format(locks.video))
+        locklist.append("جهة اتصال (contact) = `{}`".format(locks.contact))
+        locklist.append("صورة (photo) = `{}`".format(locks.photo))
         locklist.append("gif = `{}`".format(locks.gif))
-        locklist.append("url = `{}`".format(locks.url))
-        locklist.append("bots = `{}`".format(locks.bots))
-        locklist.append("forward = `{}`".format(locks.forward))
-        locklist.append("game = `{}`".format(locks.game))
-        locklist.append("location = `{}`".format(locks.location))
-        locklist.append("rtl = `{}`".format(locks.rtl))
-        locklist.append("button = `{}`".format(locks.button))
-        locklist.append("egame = `{}`".format(locks.egame))
-        locklist.append("inline = `{}`".format(locks.inline))
+        locklist.append("روابط (url) = `{}`".format(locks.url))
+        locklist.append("بوتات (bots) = `{}`".format(locks.bots))
+        locklist.append("تحويل (forward) = `{}`".format(locks.forward))
+        locklist.append("لعبة (game) = `{}`".format(locks.game))
+        locklist.append("موقع (location) = `{}`".format(locks.location))
+        locklist.append("عربي (rtl) = `{}`".format(locks.rtl))
+        locklist.append("أزرار (button) = `{}`".format(locks.button))
+        locklist.append("نرد (egame) = `{}`".format(locks.egame))
+        locklist.append("انلاين (inline) = `{}`".format(locks.inline))
         locklist.append("apk = `{}`".format(locks.apk))
         locklist.append("doc = `{}`".format(locks.doc))
         locklist.append("exe = `{}`".format(locks.exe))
@@ -424,14 +613,14 @@ def build_lock_message(chat_id):
         locklist.append("xml = `{}`".format(locks.xml))
         locklist.append("zip = `{}`".format(locks.zip))
     permissions = dispatcher.bot.get_chat(chat_id).permissions
-    permslist.append("messages = `{}`".format(permissions.can_send_messages))
-    permslist.append("media = `{}`".format(permissions.can_send_media_messages))
-    permslist.append("poll = `{}`".format(permissions.can_send_polls))
-    permslist.append("other = `{}`".format(permissions.can_send_other_messages))
-    permslist.append("previews = `{}`".format(permissions.can_add_web_page_previews))
-    permslist.append("info = `{}`".format(permissions.can_change_info))
-    permslist.append("invite = `{}`".format(permissions.can_invite_users))
-    permslist.append("pin = `{}`".format(permissions.can_pin_messages))
+    permslist.append("رسائل (messages) = `{}`".format(permissions.can_send_messages))
+    permslist.append("وسائط (media) = `{}`".format(permissions.can_send_media_messages))
+    permslist.append("استفتاء (poll) = `{}`".format(permissions.can_send_polls))
+    permslist.append("أخرى (other) = `{}`".format(permissions.can_send_other_messages))
+    permslist.append("معاينة (previews) = `{}`".format(permissions.can_add_web_page_previews))
+    permslist.append("معلومات (info) = `{}`".format(permissions.can_change_info))
+    permslist.append("دعوة (invite) = `{}`".format(permissions.can_invite_users))
+    permslist.append("تثبيت (pin) = `{}`".format(permissions.can_pin_messages))
 
     if locklist:
         # Ordering lock list
@@ -439,10 +628,11 @@ def build_lock_message(chat_id):
         # Building lock list string
         for x in locklist:
             res += "\n • {}".format(x)
-    res += "\n\n*" + "These are the current chat permissions:" + "*"
+    res += "\n\n*" + "📋 صلاحيات المحادثة الحالية:" + "*"
     for x in permslist:
         res += "\n • {}".format(x)
     return res
+
 
 @kigcmd(command='locks')
 @spamcheck
@@ -454,6 +644,19 @@ def list_locks(update, _):
 
     res = build_lock_message(chat.id)
 
+    send_message(update.effective_message, res, parse_mode=ParseMode.MARKDOWN)
+
+
+# ==================== معالج عربي لقائمة الأقفال ====================
+@kigmsg(Filters.chat_type.groups & Filters.regex(r'^(' + '|'.join(ARABIC_LOCKS_COMMANDS) + r')$'), group=3)
+@spamcheck
+@connection_status
+@user_admin_check(AdminPerms.CAN_CHANGE_INFO, allow_mods=True)
+@typing_action
+def arabic_list_locks(update, _):
+    chat = update.effective_chat
+
+    res = build_lock_message(chat.id)
 
     send_message(update.effective_message, res, parse_mode=ParseMode.MARKDOWN)
 
@@ -497,4 +700,4 @@ from .language import gs
 def get_help(chat):
     return gs(chat, "locks_help")
 
-__mod_name__ = "Locks"
+__mod_name__ = "الأقفال"
