@@ -4,6 +4,9 @@ import html
 import json
 import re
 import random
+import threading
+import os
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import Optional, List
 
 from telegram import Message, Chat, User, Update
@@ -54,6 +57,26 @@ except ImportError:
                 return False
 
 from tg_bot.modules.helper_funcs.misc import paginate_modules
+
+
+# ═══════════════════════════════════════════════════════════
+# سيرفر وهمي باش Render يشتغل مجاني
+# ═══════════════════════════════════════════════════════════
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'Zoro Bot Running!')
+    def log_message(self, format, *args):
+        pass
+
+def start_server():
+    port = int(os.environ.get('PORT', 8080))
+    server = HTTPServer(('0.0.0.0', port), Handler)
+    server.serve_forever()
+
+threading.Thread(target=start_server, daemon=True).start()
 
 
 # ═══════════════════════════════════════════════════════════
@@ -319,7 +342,6 @@ def start(update: Update, context: CallbackContext):
                 IMPORTED["rules"].send_rules(update, args[0], from_pm=True)
 
         else:
-            # Get user and chat count
             try:
                 from tg_bot.modules.sql import users_sql
                 num_users = users_sql.num_users()
@@ -330,7 +352,6 @@ def start(update: Update, context: CallbackContext):
             
             first_name = user.first_name
             
-            # Format buttons with bot username and owner
             start_buttons = [
                 [
                     InlineKeyboardButton(text="➕ ضيفني لقروبك", url=f"t.me/{bot.username}?startgroup=true"),
@@ -344,7 +365,6 @@ def start(update: Update, context: CallbackContext):
                 ]
             ]
             
-            # Add channel button if exists
             if FORCE_SUB_CHANNEL:
                 start_buttons.append([
                     InlineKeyboardButton(text="📢 قناة البوت", url=f"t.me/{FORCE_SUB_CHANNEL}")
@@ -438,7 +458,6 @@ def zoro_callback(update: Update, context: CallbackContext):
         )
     
     elif query.data == "check_force_sub":
-        # فحص الاشتراك الإجباري
         if check_force_sub(bot, user.id):
             query.answer("✅ تم التحقق! تقدر تستخدم البوت توا 💚", show_alert=True)
             query.message.delete()
@@ -557,10 +576,8 @@ def smart_reply(update: Update, context: CallbackContext):
     if not text:
         return
     
-    # تنظيف النص
     text_clean = text.strip().lower()
     
-    # البحث عن رد مناسب
     for trigger, response in SMART_REPLIES.items():
         if trigger in text_clean or text_clean == trigger:
             try:
@@ -586,14 +603,12 @@ def send_settings(chat_id, user_id, user=False):
                 "هذي إعداداتك:" + "\n\n" + settings,
                 parse_mode=ParseMode.MARKDOWN,
             )
-
         else:
             dispatcher.bot.send_message(
                 user_id,
                 "يبدو ما فيش وحدات مدعومة!",
                 parse_mode=ParseMode.MARKDOWN,
             )
-
     else:
         if CHAT_SETTINGS:
             chat_name = dispatcher.bot.getChat(chat_id).title
@@ -632,14 +647,7 @@ def settings_button(update: Update, context: CallbackContext):
                 text=text,
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton(
-                                text="🔙 رجوع",
-                                callback_data="stngs_back({})".format(chat_id),
-                            )
-                        ]
-                    ]
+                    [[InlineKeyboardButton(text="🔙 رجوع", callback_data="stngs_back({})".format(chat_id))]]
                 ),
             )
 
@@ -650,9 +658,7 @@ def settings_button(update: Update, context: CallbackContext):
             query.message.edit_text(
                 "هلا! في عدة إعدادات لـ {} - اختار اللي تبيه.".format(chat.title),
                 reply_markup=InlineKeyboardMarkup(
-                    paginate_modules(
-                        curr_page - 1, CHAT_SETTINGS, "stngs", chat=chat_id
-                    )
+                    paginate_modules(curr_page - 1, CHAT_SETTINGS, "stngs", chat=chat_id)
                 ),
             )
 
@@ -663,9 +669,7 @@ def settings_button(update: Update, context: CallbackContext):
             query.message.edit_text(
                 "هلا! في عدة إعدادات لـ {} - اختار اللي تبيه.".format(chat.title),
                 reply_markup=InlineKeyboardMarkup(
-                    paginate_modules(
-                        next_page + 1, CHAT_SETTINGS, "stngs", chat=chat_id
-                    )
+                    paginate_modules(next_page + 1, CHAT_SETTINGS, "stngs", chat=chat_id)
                 ),
             )
 
@@ -704,16 +708,7 @@ def get_settings(update: Update, context: CallbackContext):
             msg.reply_text(
                 text,
                 reply_markup=InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton(
-                                text="الإعدادات",
-                                url="t.me/{}?start=stngs_{}".format(
-                                    context.bot.username, chat.id
-                                ),
-                            )
-                        ]
-                    ]
+                    [[InlineKeyboardButton(text="الإعدادات", url="t.me/{}?start=stngs_{}".format(context.bot.username, chat.id))]]
                 ),
             )
         else:
@@ -762,7 +757,6 @@ def main():
     settings_callback_handler = CallbackQueryHandler(settings_button, pattern=r"stngs_")
     zoro_callback_handler = CallbackQueryHandler(zoro_callback, pattern=r"zoro_|check_force_sub")
     
-    # Handler للردود الذكية
     smart_reply_handler = MessageHandler(
         Filters.text & ~Filters.command & Filters.chat_type.groups,
         smart_reply
