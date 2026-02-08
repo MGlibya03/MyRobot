@@ -1,5 +1,3 @@
-rn extract_unt_fedban(message, args)[0]
-
 from typing import List, Optional, Tuple
 
 from tg_bot import log
