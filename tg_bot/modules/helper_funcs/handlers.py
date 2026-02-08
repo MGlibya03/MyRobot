@@ -29,12 +29,11 @@ class AntiSpam:
             + (SUPPORT_USERS or [])
             + (MOD_USERS or [])
         )
-        # Values are HIGHLY experimental, its recommended you pay attention to our commits as we will be adjusting the values over time with what suits best.
-        Duration.CUSTOM = 15  # Custom duration, 15 seconds
-        self.sec_limit = RequestRate(6, Duration.CUSTOM)  # 6 / Per 15 Seconds
-        self.min_limit = RequestRate(20, Duration.MINUTE)  # 20 / Per minute
-        self.hour_limit = RequestRate(100, Duration.HOUR)  # 100 / Per hour
-        self.daily_limit = RequestRate(1000, Duration.DAY)  # 1000 / Per day
+        Duration.CUSTOM = 15
+        self.sec_limit = RequestRate(6, Duration.CUSTOM)
+        self.min_limit = RequestRate(20, Duration.MINUTE)
+        self.hour_limit = RequestRate(100, Duration.HOUR)
+        self.daily_limit = RequestRate(1000, Duration.DAY)
         self.limiter = Limiter(
             self.sec_limit,
             self.min_limit,
@@ -45,31 +44,39 @@ class AntiSpam:
 
     @staticmethod
     def check_user(user):
-        """
-        Return True if user is to be ignored else False
-        """
         return bool(sql.is_user_blacklisted(user))
-        '''try: # this should be enabled but it disables the bot
-            self.limiter.try_acquire(user)
-            return False
-        except BucketFullException:
-            return True'''
+
 
 SpamChecker = AntiSpam()
 MessageHandlerChecker = AntiSpam()
 
 
-class CustomCommandHandler(tg.CommandHandler):
+class CustomCommandHandler(tg.Handler):
+    """
+    معالج أوامر مخصص يدعم العربي والإنجليزي
+    """
     def __init__(self, command, callback, run_async=True, **kwargs):
+        super().__init__(callback, run_async=run_async)
+        
+        # تحويل الأمر لقائمة لو كان string
+        if isinstance(command, str):
+            self.command = [command.lower()]
+        else:
+            self.command = [cmd.lower() for cmd in command]
+        
+        # إزالة admin_ok لو موجود
         if "admin_ok" in kwargs:
             del kwargs["admin_ok"]
-        super().__init__(command, callback, run_async=run_async, **kwargs)
+        
+        # الفلاتر
+        self.filters = kwargs.get('filters', Filters.all)
 
     def check_update(self, update):
         if not isinstance(update, Update) or not update.effective_message:
-            return
+            return None
+        
         message = update.effective_message
-
+        
         try:
             user_id = update.effective_user.id
         except:
@@ -77,39 +84,45 @@ class CustomCommandHandler(tg.CommandHandler):
 
         if message.text and len(message.text) > 1:
             fst_word = message.text.split(None, 1)[0]
-            if len(fst_word) > 1 and any(
-                fst_word.startswith(start) for start in CMD_STARTERS
-            ):
+            
+            # التحقق من بداية الأمر
+            if len(fst_word) > 1 and any(fst_word.startswith(start) for start in CMD_STARTERS):
                 args = message.text.split()[1:]
                 command = fst_word[1:].split("@")
-                command.append(
-                    message.bot.username
-                )  # in case the command was sent without a username
+                command.append(message.bot.username)
 
+                # التحقق من الأمر
                 if not (
                     command[0].lower() in self.command
                     and command[1].lower() == message.bot.username.lower()
                 ):
                     return None
 
+                # فحص السبام
                 if SpamChecker.check_user(user_id):
                     return None
 
-                filter_result = self.filters(update)
+                # فحص الفلاتر
+                if callable(self.filters):
+                    filter_result = self.filters(update)
+                else:
+                    filter_result = True
+                
                 if filter_result:
                     return args, filter_result
                 else:
                     return False
-
+        
+        return None
 
 
 class CustomMessageHandler(MessageHandler):
     def __init__(self, pattern, callback, run_async=True, friendly="", **kwargs):
         super().__init__(pattern, callback, run_async=run_async, **kwargs)
         self.friendly = friendly or pattern
+    
     def check_update(self, update):
         if isinstance(update, Update) and update.effective_message:
-
             try:
                 user_id = update.effective_user.id
             except:
@@ -122,3 +135,5 @@ class CustomMessageHandler(MessageHandler):
             return False
 
 
+# Alias للتوافق
+CommandHandler = CustomCommandHandler
