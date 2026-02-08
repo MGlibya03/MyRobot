@@ -169,6 +169,7 @@ for module_name in ALL_MODULES:
 # ═══════════════════════════════════════════════════════════
 
 SMART_REPLIES = {
+    # التحيات الإسلامية
     "السلام عليكم": "وعليكم السلام ورحمة الله وبركاته 🤍",
     "سلام": "وعليكم السلام يا طيب 💚",
     "الحمد لله": "الله يبارك فيك يا غالي 🤲",
@@ -177,43 +178,53 @@ SMART_REPLIES = {
     "سبحان الله": "سبحان الله وبحمده 🕌",
     "الله اكبر": "الله اكبر كبيرا 🕌",
     "لا اله الا الله": "محمد رسول الله ﷺ",
+    
+    # التحيات اليومية
     "صباح الخير": "صباح النور والسرور يا باهي 🌅",
     "مساء الخير": "مساء الورد والياسمين يا غالي 🌙",
     "جمعة مباركة": "وعليك اجمل جمعة يا رب 🕌",
     "رمضان كريم": "الله اكرم، كل عام وانت بخير 🌙",
     "عيد مبارك": "عساك من عواده يا غالي 🎉",
     "تصبح على خير": "وانت من اهل الخير يا باهي 🌙",
+    
+    # الدعاء
     "بارك الله فيك": "وفيك بارك الله 🤲",
     "جزاك الله خير": "واياك يا غالي 🤲",
     "ماشاء الله": "تبارك الرحمن 🤲",
     "ان شاء الله": "ان شاء الله رب العالمين 🤲",
     "يارب": "اللهم امين 🤲",
     "اللهم امين": "امين يارب العالمين 🤲",
+    
+    # الردود على الإهانات
     "بوت": "اسمي زورو مش بوت يا زول! انا اذكى منك 😏",
     "يا بوت": "قلتلك اسمي زورو! شكلك ما تفهمش 🙄",
     "غبي": "غبي جدك! انا زورو الذكي يا معلم 😎",
     "احمق": "احمق بوك! انا عبقري 🧠",
+    "هبل": "هبل بوك! انا عاقل 😎",
+    "مهبول": "مهبول جدك! 😏",
+    "مجنون": "انت اللي مجنون مش انا 🤪",
+    "خرفان": "خرفان جدك 🐑",
+    "حمار": "حمار بوك 🫏",
+    "يا واد": "واد جدك! انا زورو 😎",
+    "يا ولد": "ولد جدك يا زول 😏",
+    
+    # الأحوال
     "كيفك": "والله تمام زي الفل، كيفك انت يا باهي؟ 😊",
     "كيف حالك": "الحمد لله باهي، انت كيفك يا غالي؟ 💚",
     "شن تسوي": "نستنى فيك تكلمني يا زول 😴",
     "شنو تسوي": "قاعد نستنى فيك 😴",
     "وين انت": "هنا يا غالي! وينك انت؟ 📍",
+    "باهي": "الحمد لله، انت كيفك؟ 💚",
+    
+    # الضحك
     "ههههه": "😂😂😂 خلاص ضحكتني",
     "هههه": "ايوا اضحك اضحك 😂",
     "ههه": "😂",
     "لول": "😂😂",
+    
+    # المشاعر
     "زهقت": "وانا زهقت منك يا زول 😴",
     "ملل": "روح العب برا 🎮",
-    "تعال": "وين نمشو؟ 🚶",
-    "روح": "لا انت روح 👋",
-    "اطلع": "طلعني معاك 😂",
-    "اسكت": "لا انت اسكت 🤫",
-    "كلام فاضي": "كلامك انت الفاضي 😏",
-    "مجنون": "انت اللي مجنون مش انا 🤪",
-    "خرفان": "خرفان جدك 🐑",
-    "حمار": "حمار بوك 🫏",
-    "شكلك": "شكلي احلى منك 😎",
-    "وجهك": "وجهي احلى من وجهك 💅",
     "نعسان": "روح نوم يا زول 😴",
     "جوعان": "روح كول حاجة 🍕",
     "عطشان": "اشرب ماء 💧",
@@ -221,16 +232,26 @@ SMART_REPLIES = {
     "فرحان": "ربي يديم الفرحة عليك 🎉",
     "مريض": "سلامتك يا غالي، ربي يشفيك 🤲",
     "تعبان": "ارتاح شوية يا زول 💚",
-    "هبل": "هبل بوك! انا عاقل 😎",
-    "مهبول": "مهبول جدك! 😏",
-    "يا واد": "واد جدك! انا زورو 😎",
-    "يا ولد": "ولد جدك يا زول 😏",
-    "باهي": "الحمد لله، انت كيفك؟ 💚",
+    
+    # الأوامر
+    "تعال": "وين نمشو؟ 🚶",
+    "روح": "لا انت روح 👋",
+    "اطلع": "طلعني معاك 😂",
+    "اسكت": "لا انت اسكت 🤫",
+    
+    # الكلام
+    "كلام فاضي": "كلامك انت الفاضي 😏",
+    "شكلك": "شكلي احلى منك 😎",
+    "وجهك": "وجهي احلى من وجهك 💅",
+    
+    # الكلمات الليبية
     "توا": "ايه توا شنو تبي؟ 🤔",
     "علاش": "علاش شنو يا زول؟ 🤔",
     "كان": "كان شنو؟ قول 🤔",
     "برشا": "ايه برشا برشا 😂",
     "شوية": "شوية شوية يا غالي 😊",
+    
+    # الحب
     "احبك": "وانا نحبك اكثر يا قلبي 💕",
     "بحبك": "وانا نحبك موت 💕",
     "نحبك": "وانا نحبك اكثر منك 💕",
@@ -247,6 +268,8 @@ SMART_REPLIES = {
     "اشتقت": "وانا اشتقت اكثر 💕",
     "تعال حضني": "تعال يا قلبي 🤗💕",
     "بوسة": "💋💕",
+    
+    # المدح
     "قمر": "انت القمر يا باهي 🌙",
     "حلو": "انت الاحلى 💕",
     "جميل": "انت الاجمل 💕",
@@ -256,16 +279,24 @@ SMART_REPLIES = {
     "عزيز": "وانت اعز 💚",
     "يا ورد": "انت الورد كله 🌹",
     "يا زين": "زين الباهيين 💕",
+    
+    # الشكر
     "شكرا": "يعطيك الصحة يا غالي 💚",
     "مشكور": "العفو يا باهي 💚",
     "عفوا": "ولا يهمك 💚",
+    
+    # الترحيب
     "اهلا": "هلا والله نورت 💚",
     "مرحبا": "مرحبتين فيك يا غالي 🌟",
     "هاي": "هاي يا باهي 👋",
     "هلا": "هلا بيك يا زول 💚",
+    
+    # الوداع
     "باي": "مع السلامة يا غالي 👋💚",
     "مع السلامة": "الله يسلمك، باي 👋",
     "يلا باي": "يلا مع السلامة 👋",
+    
+    # الأسئلة
     "صاحي": "صاحي ومنتبه 👀",
     "نايم": "لا صاحي معاك 😊",
     "موجود": "ايه موجود، شن تبي؟ 💚",
@@ -279,6 +310,8 @@ SMART_REPLIES = {
     "كم": "واحد زيك 😂",
     "مين": "مين يكون؟ 🤔",
     "شكون": "شكون هو؟ 🤔",
+    
+    # عن البوت
     "انت مين": "انا زورو البوت الذكي 🤖💪",
     "اسمك": "اسمي زورو يا غالي 🤖",
     "اسمك ايش": "زورو، تشرفت بيك 🤖💚",
@@ -555,7 +588,7 @@ def help_button(update: Update, context: CallbackContext):
 
 
 # ═══════════════════════════════════════════════════════════
-# دالة الردود الذكية - مصححة
+# دالة الردود الذكية
 # ═══════════════════════════════════════════════════════════
 
 def smart_reply(update: Update, context: CallbackContext):
@@ -632,20 +665,26 @@ def send_settings(chat_id, user_id, user=False):
             )
 
 
+# ═══════════════════════════════════════════════════════════
+# دالة أزرار الإعدادات
+# ═══════════════════════════════════════════════════════════
+
 def settings_button(update: Update, context: CallbackContext):
     query = update.callback_query
     user = update.effective_user
     bot = context.bot
+    
     mod_match = re.match(r"stngs_module\((.+?),(.+?)\)", query.data)
     prev_match = re.match(r"stngs_prev\((.+?),(.+?)\)", query.data)
     next_match = re.match(r"stngs_next\((.+?),(.+?)\)", query.data)
     back_match = re.match(r"stngs_back\((.+?)\)", query.data)
+    
     try:
         if mod_match:
             chat_id = mod_match.group(1)
             module = mod_match.group(2)
             chat = bot.get_chat(chat_id)
-            text = "*{}* للإعدادات التالية لـ *{}*:\n\n".format(
+            text = "*{}* فيها الإعدادات التالية لـ *{}*:\n\n".format(
                 escape_markdown(chat.title), CHAT_SETTINGS[module].__mod_name__
             ) + CHAT_SETTINGS[module].__chat_settings__(chat_id, user.id)
             query.message.edit_text(
@@ -655,77 +694,90 @@ def settings_button(update: Update, context: CallbackContext):
                     [[InlineKeyboardButton(text="🔙 رجوع", callback_data="stngs_back({})".format(chat_id))]]
                 ),
             )
-
+            
         elif prev_match:
             chat_id = prev_match.group(1)
             curr_page = int(prev_match.group(2))
-            chat = bot.get_chat(chat_id)
             query.message.edit_text(
-                "هلا! في عدة إعدادات لـ {} - اختار اللي تبيه.".format(chat.title),
+                text="أي وحدة تبي تفحص إعداداتها؟",
                 reply_markup=InlineKeyboardMarkup(
                     paginate_modules(curr_page - 1, CHAT_SETTINGS, "stngs", chat=chat_id)
                 ),
             )
-
+            
         elif next_match:
             chat_id = next_match.group(1)
             next_page = int(next_match.group(2))
-            chat = bot.get_chat(chat_id)
             query.message.edit_text(
-                "هلا! في عدة إعدادات لـ {} - اختار اللي تبيه.".format(chat.title),
+                text="أي وحدة تبي تفحص إعداداتها؟",
                 reply_markup=InlineKeyboardMarkup(
                     paginate_modules(next_page + 1, CHAT_SETTINGS, "stngs", chat=chat_id)
                 ),
             )
-
+            
         elif back_match:
             chat_id = back_match.group(1)
-            chat = bot.get_chat(chat_id)
             query.message.edit_text(
-                text="هلا! في عدة إعدادات لـ {} - اختار اللي تبيه.".format(
-                    escape_markdown(chat.title)
-                ),
-                parse_mode=ParseMode.MARKDOWN,
+                text="أي وحدة تبي تفحص إعداداتها؟",
                 reply_markup=InlineKeyboardMarkup(
                     paginate_modules(0, CHAT_SETTINGS, "stngs", chat=chat_id)
                 ),
             )
-
+            
         query.answer()
+        
     except BadRequest as excp:
-        if excp.message not in [
-            "Message is not modified",
-            "Query_id_invalid",
-            "Message can't be deleted",
-        ]:
-            log.exception("Exception in settings buttons. %s", str(query.data))
+        if excp.message not in ["Message is not modified", "Query_id_invalid", "Message can't be deleted"]:
+            log.exception("خطأ في settings_button: %s", str(query.data))
 
+
+# ═══════════════════════════════════════════════════════════
+# دالة الإحصائيات
+# ═══════════════════════════════════════════════════════════
 
 @spamcheck
-def get_settings(update: Update, context: CallbackContext):
-    chat = update.effective_chat
+def stats(update: Update, context: CallbackContext):
     user = update.effective_user
-    msg = update.effective_message
+    
+    if user.id != OWNER_ID:
+        update.effective_message.reply_text("⛔ هذا الأمر للمطور فقط!")
+        return
+    
+    stats_text = "📊 *إحصائيات زورو:*\n\n"
+    
+    for mod in STATS:
+        try:
+            stats_text += mod.__stats__() + "\n"
+        except:
+            pass
+    
+    update.effective_message.reply_text(stats_text, parse_mode=ParseMode.MARKDOWN)
 
-    if chat.type != "private":
-        if is_user_admin(chat, user.id):
-            text = "اضغط هنا باش تجيب إعدادات هالقروب والإعدادات حقتك."
-            msg.reply_text(
-                text,
-                reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton(text="الإعدادات", url="t.me/{}?start=stngs_{}".format(context.bot.username, chat.id))]]
-                ),
-            )
-        else:
-            text = "اضغط هنا باش تفحص إعداداتك."
-    else:
-        send_settings(chat.id, user.id, True)
+
+# ═══════════════════════════════════════════════════════════
+# دالة معالجة الأخطاء
+# ═══════════════════════════════════════════════════════════
+
+def error_handler(update: Update, context: CallbackContext):
+    try:
+        raise context.error
+    except Unauthorized:
+        log.warning("Unauthorized error")
+    except BadRequest as e:
+        log.warning("BadRequest: %s", str(e))
+    except TimedOut:
+        log.warning("TimedOut error")
+    except NetworkError:
+        log.warning("NetworkError")
+    except ChatMigrated as e:
+        log.warning("ChatMigrated to %s", e.new_chat_id)
+    except TelegramError as e:
+        log.warning("TelegramError: %s", str(e))
 
 
-@spamcheck
-def donate(update: Update, context: CallbackContext):
-    update.effective_message.reply_text("شكراً لدعمك يا غالي! 💚🇱🇾")
-
+# ═══════════════════════════════════════════════════════════
+# دالة الهجرة (نقل المجموعات)
+# ═══════════════════════════════════════════════════════════
 
 def migrate_chats(update: Update, context: CallbackContext):
     msg = update.effective_message
@@ -738,64 +790,83 @@ def migrate_chats(update: Update, context: CallbackContext):
     else:
         return
 
-    log.info("Migrating from %s, to %s", str(old_chat), str(new_chat))
+    log.info("Migrating from %s to %s", str(old_chat), str(new_chat))
+    
     for mod in MIGRATEABLE:
-        mod.__migrate__(old_chat, new_chat)
-
-    log.info("Successfully migrated!")
-    raise DispatcherHandlerStop
+        try:
+            mod.__migrate__(old_chat, new_chat)
+        except:
+            pass
 
 
 # ═══════════════════════════════════════════════════════════
-# التشغيل الرئيسي
+# تشغيل البوت
 # ═══════════════════════════════════════════════════════════
 
 def main():
-
-    start_handler = CommandHandler("start", start)
-    help_handler = CommandHandler("help", help_command)
-    settings_handler = CommandHandler("settings", get_settings)
-    donate_handler = CommandHandler("donate", donate)
-    migrate_handler = MessageHandler(Filters.status_update.migrate, migrate_chats)
-
-    help_callback_handler = CallbackQueryHandler(help_button, pattern=r"help_")
-    settings_callback_handler = CallbackQueryHandler(settings_button, pattern=r"stngs_")
-    zoro_callback_handler = CallbackQueryHandler(zoro_callback, pattern=r"zoro_|check_force_sub")
-
-    smart_reply_handler = MessageHandler(
-        Filters.text & ~Filters.command & Filters.chat_type.groups,
-        smart_reply
-    )
-
+    # تسجيل الأوامر الأساسية
+    start_handler = CommandHandler(["start", "ابدأ", "بداية"], start, run_async=True)
+    help_handler = CommandHandler(["help", "مساعدة", "مساعده", "اوامر", "الاوامر"], help_command, run_async=True)
+    stats_handler = CommandHandler(["stats", "احصائيات", "الاحصائيات"], stats, run_async=True)
+    
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(help_handler)
-    dispatcher.add_handler(settings_handler)
-    dispatcher.add_handler(donate_handler)
-    dispatcher.add_handler(migrate_handler)
-    dispatcher.add_handler(help_callback_handler)
-    dispatcher.add_handler(settings_callback_handler)
-    dispatcher.add_handler(zoro_callback_handler)
-    dispatcher.add_handler(smart_reply_handler, group=999)
-
+    dispatcher.add_handler(stats_handler)
+    
+    # أزرار Callbacks
+    dispatcher.add_handler(CallbackQueryHandler(help_button, pattern=r"help_"))
+    dispatcher.add_handler(CallbackQueryHandler(zoro_callback, pattern=r"zoro_"))
+    dispatcher.add_handler(CallbackQueryHandler(settings_button, pattern=r"stngs_"))
+    
+    # الردود الذكية (أقل أولوية)
+    dispatcher.add_handler(MessageHandler(
+        Filters.text & ~Filters.command & Filters.chat_type.groups,
+        smart_reply
+    ), group=99)
+    
+    # معالج الهجرة
+    dispatcher.add_handler(MessageHandler(Filters.status_update.migrate, migrate_chats))
+    
+    # معالج الأخطاء
+    dispatcher.add_error_handler(error_handler)
+    
+    log.info("🤖 زورو بوت يعمل الآن!")
+    log.info("👨‍💻 المبرمج: @%s", OWNER_USERNAME)
+    
     if WEBHOOK:
-        log.info("Using webhooks.")
-        updater.start_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
-
+        log.info("Using webhooks...")
+        updater.start_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            url_path=TOKEN,
+            webhook_url=URL + TOKEN
+        )
         if CERT_PATH:
             updater.bot.set_webhook(url=URL + TOKEN, certificate=open(CERT_PATH, "rb"))
         else:
             updater.bot.set_webhook(url=URL + TOKEN)
-
     else:
-        log.info("زورو شغال بـ long polling... 🇱🇾")
-        updater.start_polling(timeout=15, read_latency=4, drop_pending_updates=True)
-
-    telethn.start(bot_token=TOKEN)
-    telethn.run_until_disconnected()
-    updater.idle()
+        log.info("Using long polling...")
+        updater.start_polling(
+            timeout=15,
+            read_latency=4,
+            drop_pending_updates=True
+        )
+    
+    # تشغيل Telethon
+    try:
+        telethn.run_until_disconnected()
+    except:
+        updater.idle()
 
 
 if __name__ == "__main__":
-    log.info("تحميل الوحدات بنجاح: %s", str(ALL_MODULES))
-    telethn.start(bot_token=TOKEN)
+    try:
+        import googletrans
+    except ImportError:
+        import subprocess
+        subprocess.check_call(["pip", "install", "googletrans==3.1.0a0"])
+        import googletrans
+    
+    log.info("Successfully loaded modules: " + str(ALL_MODULES))
     main()
