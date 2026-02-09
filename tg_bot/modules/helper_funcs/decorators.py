@@ -9,19 +9,16 @@ from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler as Command
 from telethon import events
 import traceback, html, requests
 
+
 # ═══════════════════════════════════════════════════════════
 # قاموس الأوامر العربية 🇱🇾
-# كل أمر إنجليزي يتحول تلقائياً لعربي
 # ═══════════════════════════════════════════════════════════
 
 ARABIC_COMMANDS = {
-    # أساسي
     "start": ["ابدا", "بداية"],
     "help": ["مساعدة", "مساعده", "اوامر", "الاوامر"],
     "settings": ["اعدادات", "الاعدادات"],
     "stats": ["احصائيات", "الاحصائيات"],
-
-    # إدارة
     "admins": ["الادمنية", "المشرفين"],
     "adminlist": ["قائمة_المشرفين"],
     "staff": ["الطاقم"],
@@ -44,8 +41,6 @@ ARABIC_COMMANDS = {
     "admincache": ["تحديث_المشرفين"],
     "zombies": ["الحسابات_المحذوفة", "زومبي"],
     "requests": ["طلبات_الانضمام"],
-
-    # حظر وطرد
     "ban": ["حظر", "بان"],
     "sban": ["حظر_صامت"],
     "dban": ["حظر_ومسح"],
@@ -57,15 +52,11 @@ ARABIC_COMMANDS = {
     "dkick": ["طرد_ومسح"],
     "dskick": ["طرد_صامت_ومسح"],
     "kickme": ["اطردني"],
-
-    # كتم
     "mute": ["كتم", "اسكت"],
     "smute": ["كتم_صامت"],
     "dmute": ["كتم_ومسح"],
     "tmute": ["كتم_مؤقت"],
     "unmute": ["رفع_الكتم", "فك_الكتم"],
-
-    # تحذيرات
     "warn": ["تحذير", "انذار"],
     "swarn": ["تحذير_صامت"],
     "dwarn": ["تحذير_ومسح"],
@@ -79,8 +70,6 @@ ARABIC_COMMANDS = {
     "warnlimit": ["حد_التحذيرات"],
     "strongwarn": ["تحذير_قوي"],
     "warnlist": ["قائمة_التحذيرات"],
-
-    # قائمة سوداء
     "blacklist": ["القائمة_السوداء", "الاسود"],
     "blacklists": ["القوائم_السوداء"],
     "addblacklist": ["اضف_اسود"],
@@ -93,8 +82,6 @@ ARABIC_COMMANDS = {
     "blocklistmode": ["وضع_الحظر"],
     "removeallblacklists": ["مسح_كل_الاسود"],
     "removeallblocklists": ["مسح_كل_الحظر"],
-
-    # ملاحظات
     "save": ["حفظ", "احفظ"],
     "get": ["جلب", "جيب"],
     "clear": ["مسح"],
@@ -102,8 +89,6 @@ ARABIC_COMMANDS = {
     "saved": ["المحفوظات"],
     "privatenotes": ["ملاحظات_خاصة"],
     "removeallnotes": ["مسح_كل_الملاحظات"],
-
-    # ترحيب
     "welcome": ["ترحيب"],
     "setwelcome": ["ضبط_ترحيب"],
     "resetwelcome": ["اعادة_ترحيب"],
@@ -116,37 +101,25 @@ ARABIC_COMMANDS = {
     "welcomemutetime": ["وقت_كتم_ترحيب"],
     "setmutetext": ["نص_كتم"],
     "resetmutetext": ["اعادة_نص_كتم"],
-
-    # أقفال
     "lock": ["قفل"],
     "unlock": ["فتح"],
     "locks": ["الاقفال"],
     "locktypes": ["انواع_القفل"],
     "antichannel": ["ضد_القنوات"],
-
-    # قفل المجموعة
     "lockdown": ["اغلاق"],
     "unlockdown": ["فتح_الاغلاق"],
-
-    # تنظيف
     "purge": ["تطهير", "مسح_رسائل"],
     "spurge": ["تطهير_صامت"],
     "purgeto": ["تطهير_الى"],
     "del": ["حذف"],
-
-    # فلاتر
     "filter": ["فلتر"],
     "filters": ["الفلاتر"],
     "stop": ["ايقاف", "وقف"],
     "removeallfilters": ["مسح_كل_الفلاتر"],
     "stopall": ["ايقاف_الكل"],
-
-    # قوانين
     "rules": ["القوانين", "القواعد"],
     "setrules": ["ضبط_القوانين"],
     "clearrules": ["مسح_القوانين"],
-
-    # ضد السبام والفلود
     "flood": ["الفلود"],
     "setflood": ["ضبط_الفلود"],
     "setfloodmode": ["وضع_الفلود"],
@@ -154,38 +127,26 @@ ARABIC_COMMANDS = {
     "antispam": ["ضد_السبام"],
     "gbanstat": ["حالة_الحظر_العام"],
     "sibylban": ["حظر_سيبيل"],
-
-    # معلومات
     "info": ["معلومات"],
     "id": ["الايدي", "ايدي"],
     "setbio": ["ضبط_البايو"],
     "bio": ["البايو"],
     "setme": ["ضبط_معلوماتي"],
     "me": ["انا"],
-
-    # AFK
     "afk": ["مشغول", "بعيد"],
-
-    # موافقة
     "approve": ["موافقة", "وافق"],
     "unapprove": ["رفض_الموافقة"],
     "approved": ["الموافق_عليهم"],
     "approval": ["حالة_الموافقة"],
     "unapproveall": ["رفض_الكل"],
-
-    # اتصال
     "connect": ["اتصال", "ربط"],
     "connection": ["الاتصال"],
     "disconnect": ["قطع_الاتصال", "فصل"],
     "allowconnect": ["سماح_الاتصال"],
     "helpconnect": ["مساعدة_الاتصال"],
-
-    # ترجمة
     "tl": ["ترجم"],
     "tr": ["ترجمة"],
     "langs": ["اللغات"],
-
-    # أدوات
     "wiki": ["ويكي"],
     "ud": ["قاموس"],
     "wall": ["خلفيات"],
@@ -195,69 +156,41 @@ ARABIC_COMMANDS = {
     "removebotkeyboard": ["ازالة_الكيبورد"],
     "imdb": ["افلام"],
     "weather": ["الطقس"],
-
-    # ملصقات
     "stickerid": ["ايدي_الملصق"],
     "getsticker": ["جيب_الملصق"],
     "kang": ["سرقة", "اسرق"],
-
-    # أغاني
     "song": ["اغنية"],
     "video": ["فيديو"],
     "lyrics": ["كلمات"],
-
-    # يوتيوب
     "yt": ["يوتيوب"],
     "ytdl": ["تحميل_يوتيوب"],
-
-    # أندرويد
     "magisk": ["ماجسك"],
     "device": ["جهاز"],
     "twrp": ["ريكفري"],
-
-    # GitHub
     "github": ["قيت"],
     "repo": ["مستودع"],
-
-    # أنمي
     "anime": ["انمي"],
     "character": ["شخصية"],
     "manga": ["مانقا"],
-
-    # تنظيف النص الأزرق
     "cleanbluetext": ["تنظيف_الازرق"],
     "ignorecleanbluetext": ["تجاهل_الازرق"],
     "unignorecleanbluetext": ["الغاء_تجاهل_الازرق"],
     "listcleanbluetext": ["قائمة_الازرق"],
     "clearcmd": ["مسح_الاوامر"],
-
-    # تعطيل
     "cmds": ["حالة_الاوامر"],
     "enable": ["تفعيل"],
     "disable": ["تعطيل"],
     "listcmds": ["قائمة_الاوامر"],
-
-    # بلاغات
     "report": ["بلاغ", "تبليغ"],
     "reports": ["البلاغات"],
-
-    # سجل القناة
     "logchannel": ["سجل_القناة"],
     "setlog": ["ضبط_السجل"],
     "unsetlog": ["حذف_السجل"],
-
-    # استيراد وتصدير
     "import": ["استيراد"],
     "export": ["تصدير"],
-
-    # إعلان
     "announce": ["اعلان"],
-
-    # مجهول
     "setanon": ["مجهول"],
     "unsetanon": ["الغاء_مجهول"],
-
-    # الاتحادات
     "newfed": ["اتحاد_جديد"],
     "renamefed": ["تغيير_اسم_الاتحاد"],
     "delfed": ["حذف_الاتحاد"],
@@ -282,8 +215,6 @@ ARABIC_COMMANDS = {
     "fbanstat": ["حالة_حظر_الاتحاد"],
     "fednotif": ["اشعارات_الاتحاد"],
     "frules": ["قوانين_الاتحاد"],
-
-    # البنك والألعاب
     "bank": ["البنك"],
     "balance": ["رصيدي", "رصيد"],
     "daily": ["اليومي", "يومي"],
@@ -295,37 +226,45 @@ ARABIC_COMMANDS = {
     "rob": ["سرقة_بنك"],
     "top": ["الترتيب"],
     "leaderboard": ["المتصدرين"],
-
-    # لغة
     "lang": ["اللغة"],
     "setlang": ["ضبط_اللغة"],
-
-    # TTS
     "tts": ["صوت"],
-
-    # عملة
     "currency": ["عملة"],
-
-    # تصحيح
     "debug": ["تصحيح"],
     "eval": ["تنفيذ"],
+    "e": ["تنفيذ٢"],
+    "ev": ["تنفيذ٣"],
+    "eva": ["تنفيذ٤"],
     "sh": ["شل"],
 }
 
 
+# ═══════════════════════════════════════════════════════════
+# دالة تحويل الأوامر - تدعم str, list, tuple
+# ═══════════════════════════════════════════════════════════
+
 def get_arabic_aliases(command):
     """يرجع قائمة الأوامر العربية المقابلة للأمر الإنجليزي"""
+
+    # تحويل tuple الى list
+    if isinstance(command, tuple):
+        command = list(command)
+
+    # تحويل str الى list
+    if isinstance(command, str):
+        command = [command]
+
+    # الآن command دائماً list
     if isinstance(command, list):
         result = list(command)
         for cmd in command:
-            if cmd in ARABIC_COMMANDS:
+            # تأكد ان cmd هو string
+            if isinstance(cmd, str) and cmd in ARABIC_COMMANDS:
                 result.extend(ARABIC_COMMANDS[cmd])
         return result
-    elif isinstance(command, str):
-        if command in ARABIC_COMMANDS:
-            return [command] + ARABIC_COMMANDS[command]
-        return [command]
-    return [command]
+
+    # احتياط - لو نوع غير متوقع
+    return [str(command)]
 
 
 # ═══════════════════════════════════════════════════════════
@@ -348,7 +287,17 @@ class KigyoTelegramHandler:
 
         def _command(func):
             # ✅ إضافة الأوامر العربية تلقائياً
-            enhanced_command = get_arabic_aliases(command)
+            try:
+                enhanced_command = get_arabic_aliases(command)
+            except Exception as e:
+                log.warning(f"[ARABIC] Error enhancing command {command}: {e}")
+                # لو حصل خطأ، استخدم الأمر الأصلي
+                if isinstance(command, (list, tuple)):
+                    enhanced_command = list(command)
+                elif isinstance(command, str):
+                    enhanced_command = [command]
+                else:
+                    enhanced_command = [str(command)]
 
             try:
                 if can_disable:
@@ -364,18 +313,43 @@ class KigyoTelegramHandler:
                 log.debug(
                     f"[KIGCMD] Loaded handler {enhanced_command} for function {func.__name__} in group {group}")
             except TypeError:
-                if can_disable:
-                    self._dispatcher.add_handler(
-                        DisableAbleCommandHandler(enhanced_command, func, filters=filters, run_async=run_async,
-                                                  pass_args=pass_args, admin_ok=admin_ok,
-                                                  pass_chat_data=pass_chat_data)
-                    )
-                else:
-                    self._dispatcher.add_handler(
-                        CommandHandler(enhanced_command, func, filters=filters, run_async=run_async,
-                                       pass_args=pass_args, pass_chat_data=pass_chat_data)
-                    )
-                log.debug(f"[KIGCMD] Loaded handler {enhanced_command} for function {func.__name__}")
+                try:
+                    if can_disable:
+                        self._dispatcher.add_handler(
+                            DisableAbleCommandHandler(enhanced_command, func, filters=filters, run_async=run_async,
+                                                      pass_args=pass_args, admin_ok=admin_ok,
+                                                      pass_chat_data=pass_chat_data)
+                        )
+                    else:
+                        self._dispatcher.add_handler(
+                            CommandHandler(enhanced_command, func, filters=filters, run_async=run_async,
+                                           pass_args=pass_args, pass_chat_data=pass_chat_data)
+                        )
+                    log.debug(f"[KIGCMD] Loaded handler {enhanced_command} for function {func.__name__}")
+                except Exception as e:
+                    log.error(f"[KIGCMD] Failed to load handler {command}: {e}")
+                    # محاولة اخيرة بالأمر الأصلي بدون عربي
+                    try:
+                        if isinstance(command, tuple):
+                            orig = list(command)
+                        elif isinstance(command, str):
+                            orig = [command]
+                        else:
+                            orig = list(command)
+
+                        if can_disable:
+                            self._dispatcher.add_handler(
+                                DisableAbleCommandHandler(orig, func, filters=filters, run_async=run_async,
+                                                          pass_args=pass_args, admin_ok=admin_ok), group
+                            )
+                        else:
+                            self._dispatcher.add_handler(
+                                CommandHandler(orig, func, filters=filters, run_async=run_async,
+                                               pass_args=pass_args), group
+                            )
+                        log.debug(f"[KIGCMD] Loaded handler {orig} (fallback) for function {func.__name__}")
+                    except:
+                        log.error(f"[KIGCMD] Completely failed to load handler for {func.__name__}")
 
             return func
 
@@ -401,15 +375,18 @@ class KigyoTelegramHandler:
                 log.debug(
                     f"[KIGMSG] Loaded filter pattern {pattern} for function {func.__name__} in group {group}")
             except TypeError:
-                if can_disable:
-                    self._dispatcher.add_handler(
-                        DisableAbleMessageHandler(pattern, func, friendly=friendly, run_async=run_async)
-                    )
-                else:
-                    self._dispatcher.add_handler(
-                        MessageHandler(pattern, func, run_async=run_async)
-                    )
-                log.debug(f"[KIGMSG] Loaded filter pattern {pattern} for function {func.__name__}")
+                try:
+                    if can_disable:
+                        self._dispatcher.add_handler(
+                            DisableAbleMessageHandler(pattern, func, friendly=friendly, run_async=run_async)
+                        )
+                    else:
+                        self._dispatcher.add_handler(
+                            MessageHandler(pattern, func, run_async=run_async)
+                        )
+                    log.debug(f"[KIGMSG] Loaded filter pattern {pattern} for function {func.__name__}")
+                except Exception as e:
+                    log.error(f"[KIGMSG] Failed to load message handler: {e}")
 
             return func
 
@@ -499,50 +476,51 @@ def register(**args):
             except KeyboardInterrupt:
                 pass
             except BaseException:
-                e = html.escape(f"{check.text}")
+                try:
+                    e = html.escape(f"{check.text}")
 
-                tb_list = traceback.format_exception(
-                    None, check.error, check.error.__traceback__
-                )
-                tb = "".join(tb_list)
-                pretty_message = (
-                    "An exception was raised while handling an update\n"
-                    "User: {}\n"
-                    "Chat: {} {}\n"
-                    "Callback data: {}\n"
-                    "Message: {}\n\n"
-                    "Full Traceback: {}"
-                ).format(
-                    check.from_id or "None",
-                    check.chat.title or "",
-                    check.chat_id or "",
-                    check.callback_query or "None",
-                    check.text.text or "No message",
-                    tb,
-                )
+                    tb_list = traceback.format_exception(
+                        None, check.error, check.error.__traceback__
+                    )
+                    tb = "".join(tb_list)
+                    pretty_message = (
+                        "An exception was raised while handling an update\n"
+                        "User: {}\n"
+                        "Chat: {} {}\n"
+                        "Callback data: {}\n"
+                        "Message: {}\n\n"
+                        "Full Traceback: {}"
+                    ).format(
+                        check.from_id or "None",
+                        getattr(check.chat, 'title', '') or "",
+                        check.chat_id or "",
+                        getattr(check, 'callback_query', None) or "None",
+                        getattr(check.text, 'text', check.text) or "No message",
+                        tb,
+                    )
 
-                key = requests.post(
-                    "https://nekobin.com/api/documents", json={"content": pretty_message}
-                ).json()
-                if not key.get("result", {}).get("key"):
-                    with open("error.txt", "w+") as f:
-                        f.write(pretty_message)
-                    check.client.send_media(
+                    key = requests.post(
+                        "https://nekobin.com/api/documents", json={"content": pretty_message}
+                    ).json()
+                    if not key.get("result", {}).get("key"):
+                        with open("error.txt", "w+") as f:
+                            f.write(pretty_message)
+                        await check.client.send_file(
+                            OWNER_ID,
+                            open("error.txt", "rb"),
+                            caption=f"<b>حصل خطا:</b>\n<code>{e}</code>",
+                            parse_mode="html",
+                        )
+                        return
+                    key = key.get("result").get("key")
+                    url = f"https://nekobin.com/{key}.py"
+                    await check.client.send_message(
                         OWNER_ID,
-                        open("error.txt", "rb"),
-                        caption=f"#{check.error.identifier}\n<b>حصل خطا:</b>\n<code>{e}</code>",
+                        f"<b>حصل خطا:</b>\n<code>{e}</code>\n\n<a href='{url}'>التفاصيل</a>",
                         parse_mode="html",
                     )
-                    return
-                key = key.get("result").get("key")
-                url = f"https://nekobin.com/{key}.py"
-                check.client.send_message(
-                    OWNER_ID,
-                    text=f"#{check.error.identifier}\n<b>حصل خطا:</b>\n<code>{e}</code>",
-                    reply_markup=InlineKeyboardMarkup(
-                        [[InlineKeyboardButton("Nekobin", url=url)]]),
-                    parse_mode="html",
-                )
+                except Exception:
+                    log.error("Error in error handler", exc_info=True)
 
         if not disable_edited:
             telethn.add_event_handler(wrapper, events.MessageEdited(**args))
