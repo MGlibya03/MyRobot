@@ -23,32 +23,8 @@ else:
     CMD_STARTERS = ["/", "!", ">"]
 
 
-# ═══════════════════════════════════════════════════════════
-# قائمة كل الأوامر العربية - للتعرف عليها بدون رمز
-# ═══════════════════════════════════════════════════════════
-
-ALL_ARABIC_WORDS = set()
-
-def _build_arabic_words():
-    """يبني قائمة كل الكلمات العربية المسجلة كأوامر"""
-    try:
-        from tg_bot.modules.helper_funcs.decorators import ARABIC_COMMANDS
-        for eng_cmd, ar_list in ARABIC_COMMANDS.items():
-            for ar_word in ar_list:
-                ALL_ARABIC_WORDS.add(ar_word.lower())
-    except ImportError:
-        pass
-
-# نبني القائمة لاحقاً عند أول استخدام
-_arabic_built = False
-
-
 def _ensure_string_list(command):
-    """
-    يحول اي نوع (str, list, tuple, متداخلة) الى list of strings
-    """
     result = []
-
     if isinstance(command, str):
         result.append(command.lower())
     elif isinstance(command, (list, tuple)):
@@ -65,12 +41,10 @@ def _ensure_string_list(command):
                 result.append(str(item).lower())
     else:
         result.append(str(command).lower())
-
     return result
 
 
-def _is_arabic_text(text):
-    """يتحقق اذا النص يحتوي على حروف عربية"""
+def _is_arabic(text):
     if not text:
         return False
     for char in text:
@@ -118,25 +92,20 @@ MessageHandlerChecker = AntiSpam()
 
 class CustomCommandHandler(tg.Handler):
     """
-    معالج أوامر مخصص يدعم:
-    1. الأوامر بالرموز: /ban !حظر >kick
-    2. الأوامر العربية بدون رمز: حظر، طرد، كتم
+    معالج أوامر يدعم:
+    - حظر (بدون أي رمز)
+    - مسح (بدون أي رمز)
+    - رصيدي (بدون أي رمز)
+    - /ban (بالرمز للإنجليزي)
     """
     def __init__(self, command, callback, run_async=True, **kwargs):
         super().__init__(callback, run_async=run_async)
-
         self.command = _ensure_string_list(command)
 
         if "admin_ok" in kwargs:
             del kwargs["admin_ok"]
 
         self.filters = kwargs.get('filters', Filters.all)
-
-        # نحدد الأوامر العربية من ضمن أوامر هالهاندلر
-        self.arabic_commands = set()
-        for cmd in self.command:
-            if _is_arabic_text(cmd):
-                self.arabic_commands.add(cmd)
 
     def check_update(self, update):
         if not isinstance(update, Update) or not update.effective_message:
@@ -149,35 +118,50 @@ class CustomCommandHandler(tg.Handler):
         except:
             user_id = None
 
-        if not message.text or len(message.text) < 1:
+        if not message.text or len(message.text.strip()) < 1:
             return None
 
         text = message.text.strip()
-        if not text:
-            return None
-
         fst_word = text.split(None, 1)[0]
 
         if len(fst_word) < 1:
             return None
 
-        # ═══════════════════════════════════════
-        # الطريقة 1: أمر برمز (/ أو ! أو >)
-        # ═══════════════════════════════════════
-        if len(fst_word) > 1 and any(fst_word.startswith(start) for start in CMD_STARTERS):
-            args = text.split()[1:]
+        cmd_name = None
+        args = text.split()[1:]
+
+        # ═══════════════════════════════════════════
+        # أولاً: لو فيه رمز (/ أو ! أو >)
+        # ═══════════════════════════════════════════
+        if len(fst_word) > 1 and fst_word[0] in CMD_STARTERS:
             command_text = fst_word[1:]
-            command_parts = command_text.split("@")
-            cmd_name = command_parts[0].lower()
 
-            # تحقق من اسم البوت لو موجود
-            if len(command_parts) > 1:
-                if command_parts[1].lower() != message.bot.username.lower():
+            if "@" in command_text:
+                parts = command_text.split("@", 1)
+                cmd_name = parts[0].lower()
+                if parts[1].lower() != message.bot.username.lower():
                     return None
+            else:
+                cmd_name = command_text.lower()
 
-            if cmd_name not in self.command:
-                return None
+        # ═══════════════════════════════════════════
+        # ثانياً: بدون أي رمز (الكلمة مباشرة)
+        # ═══════════════════════════════════════════
+        else:
+            word = fst_word
 
+            if "@" in word:
+                parts = word.split("@", 1)
+                cmd_name = parts[0].lower()
+                if parts[1].lower() != message.bot.username.lower():
+                    return None
+            else:
+                cmd_name = word.lower()
+
+        # ═══════════════════════════════════════════
+        # نتحقق اذا الأمر مسجل
+        # ═══════════════════════════════════════════
+        if cmd_name and cmd_name in self.command:
             if SpamChecker.check_user(user_id):
                 return None
 
@@ -188,37 +172,7 @@ class CustomCommandHandler(tg.Handler):
 
             if filter_result:
                 return args, filter_result
-            else:
-                return False
-
-        # ═══════════════════════════════════════
-        # الطريقة 2: أمر عربي بدون رمز
-        # ═══════════════════════════════════════
-        if self.arabic_commands:
-            cmd_word = fst_word.lower()
-
-            # ازالة @ لو موجودة
-            if "@" in cmd_word:
-                parts = cmd_word.split("@")
-                cmd_word = parts[0]
-                if len(parts) > 1 and parts[1].lower() != message.bot.username.lower():
-                    return None
-
-            if cmd_word in self.arabic_commands:
-                args = text.split()[1:]
-
-                if SpamChecker.check_user(user_id):
-                    return None
-
-                if callable(self.filters):
-                    filter_result = self.filters(update)
-                else:
-                    filter_result = True
-
-                if filter_result:
-                    return args, filter_result
-                else:
-                    return False
+            return False
 
         return None
 
