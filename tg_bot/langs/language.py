@@ -12,7 +12,6 @@ class Language:
         try:
             return self.languages[lang][string]
         except KeyError:
-            # a keyerror happened, the english file must have it
             en_string = self.languages["en"].get(string)
             if en_string is None:
                 raise StringNotFound(f"String: ({string}) not found.")
@@ -44,3 +43,6 @@ class StringNotFound(Exception):
 
 
 langs = Language()
+
+# اللغة الافتراضية
+DEFAULT_LANG = "ar"
