@@ -11,20 +11,25 @@ from telethon.sessions import MemorySession
 from configparser import ConfigParser
 from functools import wraps
 from SibylSystem import PsychoPass
+
 try:
     os.system(os.environ['convert_config'])
     from .config import config_vars
 except (ModuleNotFoundError, KeyError):
     config_vars = None
+
 StartTime = time.time()
 
+
 def get_user_list(key):
-    # Import here to evade a circular import
     from tg_bot.modules.sql import nation_sql
     royals = nation_sql.get_royals(key)
     return [a.user_id for a in royals]
 
+
+# ═══════════════════════════════════════════════════════════
 # setup loggers
+# ═══════════════════════════════════════════════════════════
 
 file_formatter = logging.Formatter('%(asctime)s - %(levelname)s -- < - %(name)s - > -- %(message)s')
 stream_formatter = logging.Formatter('< - %(name)s - > -- %(message)s')
@@ -41,21 +46,19 @@ file_handler.setLevel(logging.INFO)
 stream_handler.setLevel(logging.WARNING)
 debug_handler.setLevel(logging.DEBUG)
 
-logging.basicConfig(handlers = [file_handler, stream_handler, debug_handler], level = logging.DEBUG)
+logging.basicConfig(handlers=[file_handler, stream_handler, debug_handler], level=logging.DEBUG)
 log = logging.getLogger('[زورو]')
 
 log.info("زورو بوت يشتغل... | البوت من تطوير: @MGlibya03")
 
-# if version < 3.6, stop bot.
 if sys.version_info[0] < 3 or sys.version_info[1] < 7:
-    log.error(
-        "لازم يكون عندك بايثون 3.7 او اعلى! البوت بيقفل."
-    )
+    log.error("لازم يكون عندك بايثون 3.7 او اعلى! البوت بيقفل.")
     quit(1)
 
 from collections import ChainMap
 
-class ConfigParser(ConfigParser):
+
+class ConfigParserCustom(ConfigParser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -65,7 +68,7 @@ class ConfigParser(ConfigParser):
         log.debug("Using the supplied config vars!")
         var_dict = {
             self.optionxform(
-                    key.split(str(section).upper() + "__")[1].lower()
+                key.split(str(section).upper() + "__")[1].lower()
             ): value
             for key, value in config_vars.items()
             if value is not None
@@ -74,79 +77,125 @@ class ConfigParser(ConfigParser):
         return ChainMap(var_dict, {}, self._defaults)
 
 
-parser = ConfigParser()
-parser.read("config.ini")
-kigconfig = parser["kigconfig"]
+parser = ConfigParserCustom()
+
+# ═══════════════════════════════════════════════════════════
+# قراءة config.ini لو موجود، ولو مش موجود نستخدم env vars
+# ═══════════════════════════════════════════════════════════
+
+config_file_exists = os.path.exists("config.ini")
+if config_file_exists:
+    parser.read("config.ini")
+    log.info("تم قراءة config.ini")
+else:
+    log.info("config.ini مش موجود - نستخدم متغيرات البيئة")
+
 
 class KigyoINIT:
-    def __init__(self, parser: ConfigParser):
+    def __init__(self, parser, use_env=False):
         self.parser = parser
-        self.SYS_ADMIN: int = self.parser.getint('SYS_ADMIN', '0')
-        self.OWNER_ID: int = self.parser.getint('OWNER_ID', '0')
-        self.OWNER_USERNAME: str = self.parser.get('OWNER_USERNAME', "0")
-        self.APP_ID: str = self.parser.getint("APP_ID")
-        self.API_HASH: str = self.parser.get("API_HASH")
-        self.WEBHOOK: bool = self.parser.getboolean('WEBHOOK', False)
-        self.URL: str = self.parser.get('URL', None)
-        self.CERT_PATH: str = self.parser.get('CERT_PATH', None)
-        self.PORT: int = self.parser.getint('PORT', None)
-        self.INFOPIC: bool = self.parser.getboolean('INFOPIC', False)
-        self.DEL_CMDS: bool = self.parser.getboolean("DEL_CMDS", False)
-        self.STRICT_GBAN: bool = self.parser.getboolean("STRICT_GBAN", False)
-        self.ALLOW_EXCL: bool = self.parser.getboolean("ALLOW_EXCL", False)
-        self.CUSTOM_CMD: List[str] = ['/', '!', ">"]
-        self.BAN_STICKER: str = self.parser.get("BAN_STICKER", None)
-        self.TOKEN: str = self.parser.get("TOKEN")
-        self.DB_URI: str = self.parser.get("SQLALCHEMY_DATABASE_URI")
-        self.LOAD = self.parser.get("LOAD", "").split()
-        self.LOAD: List[str] = list(map(str, self.LOAD))
-        self.MESSAGE_DUMP: int = self.parser.getint('MESSAGE_DUMP', None)
-        self.GBAN_LOGS: int = self.parser.getint('GBAN_LOGS', None)
-        self.NO_LOAD = self.parser.get("NO_LOAD", "").split()
-        self.NO_LOAD: List[str] = list(map(str, self.NO_LOAD))
-        self.spamwatch_api: str = self.parser.get('spamwatch_api', None)
-        self.CASH_API_KEY: str = self.parser.get('CASH_API_KEY', None)
-        self.TIME_API_KEY: str = self.parser.get('TIME_API_KEY', None)
-        self.WALL_API: str = self.parser.get('WALL_API', None)
-        self.LASTFM_API_KEY: str = self.parser.get('LASTFM_API_KEY', None)
-        self.WEATHER_API: str = self.parser.get('WEATHER_API', None)
-        self.CF_API_KEY: str =  self.parser.get("CF_API_KEY", None)
-        self.bot_id = 0 #placeholder
+        self.use_env = use_env
+
+    def _get(self, key, default=None):
+        """جلب القيمة من config.ini أو من البيئة"""
+        if self.use_env:
+            return os.environ.get(key.upper(), os.environ.get(key, default))
+        else:
+            try:
+                return self.parser.get(key, default)
+            except:
+                return os.environ.get(key.upper(), os.environ.get(key, default))
+
+    def _getint(self, key, default=0):
+        """جلب قيمة رقمية"""
+        val = self._get(key, default)
+        try:
+            return int(val)
+        except (TypeError, ValueError):
+            return int(default) if default else 0
+
+    def _getbool(self, key, default=False):
+        """جلب قيمة منطقية"""
+        val = self._get(key, str(default))
+        if isinstance(val, bool):
+            return val
+        return str(val).lower() in ('true', '1', 'yes', 'on')
+
+    def load_config(self):
+        self.SYS_ADMIN = self._getint('SYS_ADMIN', 0)
+        self.OWNER_ID = self._getint('OWNER_ID', 0)
+        self.OWNER_USERNAME = self._get('OWNER_USERNAME', "0")
+        self.APP_ID = self._getint('APP_ID', 0)
+        self.API_HASH = self._get('API_HASH', '')
+        self.WEBHOOK = self._getbool('WEBHOOK', False)
+        self.URL = self._get('URL', None)
+        self.CERT_PATH = self._get('CERT_PATH', None)
+        self.PORT = self._getint('PORT', 8443)
+        self.INFOPIC = self._getbool('INFOPIC', False)
+        self.DEL_CMDS = self._getbool('DEL_CMDS', False)
+        self.STRICT_GBAN = self._getbool('STRICT_GBAN', False)
+        self.ALLOW_EXCL = self._getbool('ALLOW_EXCL', False)
+        self.CUSTOM_CMD = ['/', '!', '>']
+        self.BAN_STICKER = self._get('BAN_STICKER', None)
+        self.TOKEN = self._get('TOKEN', '')
+        self.DB_URI = self._get('SQLALCHEMY_DATABASE_URI', self._get('DATABASE_URL', ''))
         
+        load_str = self._get('LOAD', '')
+        self.LOAD = load_str.split() if load_str else []
+        
+        self.MESSAGE_DUMP = self._getint('MESSAGE_DUMP', 0) or None
+        self.GBAN_LOGS = self._getint('GBAN_LOGS', 0) or None
+        
+        no_load_str = self._get('NO_LOAD', '')
+        self.NO_LOAD = no_load_str.split() if no_load_str else []
+        
+        self.spamwatch_api = self._get('spamwatch_api', self._get('SPAMWATCH_API', None))
+        self.CASH_API_KEY = self._get('CASH_API_KEY', None)
+        self.TIME_API_KEY = self._get('TIME_API_KEY', None)
+        self.WALL_API = self._get('WALL_API', None)
+        self.LASTFM_API_KEY = self._get('LASTFM_API_KEY', None)
+        self.WEATHER_API = self._get('WEATHER_API', None)
+        self.CF_API_KEY = self._get('CF_API_KEY', None)
+        self.bot_id = 0
+
         # ═══════════════════════════════════════
-        # تغيير اسم البوت لـ زورو
+        # اسم البوت
         # ═══════════════════════════════════════
         self.bot_name = "زورو 🤖"
         self.bot_username = "ZoroRobot"
-        
-        # ═══════════════════════════════════════
-        # اعدادات الاشتراك الاجباري
-        # ═══════════════════════════════════════
-        self.FORCE_SUB_CHANNEL: str = self.parser.get('FORCE_SUB_CHANNEL', None)
-        
-        self.DEBUG: bool = self.parser.getboolean("IS_DEBUG", False)
-        self.DROP_UPDATES: bool = self.parser.getboolean("DROP_UPDATES", True)
-        self.BOT_API_URL: str = self.parser.get('BOT_API_URL', "https://api.telegram.org/bot")
-        self.BOT_API_FILE_URL: str = self.parser.get('BOT_API_FILE_URL', "https://api.telegram.org/file/bot")
 
-        self.ALLOW_CHATS =  self.parser.getboolean("ALLOW_CHATS", True)
-        self.SUPPORT_GROUP =  self.parser.get("SUPPORT_GROUP", 0)
-        self.IS_DEBUG =  self.parser.getboolean("IS_DEBUG", False)
-        self.ANTISPAM_TOGGLE =  self.parser.getboolean("ANTISPAM_TOGGLE", True)
-        self.GROUP_BLACKLIST =  self.parser.get("GROUP_BLACKLIST", [])
-        self.GLOBALANNOUNCE =  self.parser.getboolean("GLOBALANNOUNCE", False)
-        self.BACKUP_PASS =  self.parser.get("BACKUP_PASS", None)
-        self.SIBYL_KEY =  self.parser.get("SIBYL_KEY", None)
-        self.SIBYL_ENDPOINT = self.parser.get("SIBYL_ENDPOINT", "https://psychopass.kaizoku.cyou")
+        # ═══════════════════════════════════════
+        # الاشتراك الاجباري
+        # ═══════════════════════════════════════
+        self.FORCE_SUB_CHANNEL = self._get('FORCE_SUB_CHANNEL', None)
 
+        self.DEBUG = self._getbool('IS_DEBUG', False)
+        self.DROP_UPDATES = self._getbool('DROP_UPDATES', True)
+        self.BOT_API_URL = self._get('BOT_API_URL', 'https://api.telegram.org/bot')
+        self.BOT_API_FILE_URL = self._get('BOT_API_FILE_URL', 'https://api.telegram.org/file/bot')
+
+        self.ALLOW_CHATS = self._getbool('ALLOW_CHATS', True)
+        self.SUPPORT_GROUP = self._get('SUPPORT_GROUP', '0')
+        self.IS_DEBUG = self._getbool('IS_DEBUG', False)
+        self.ANTISPAM_TOGGLE = self._getbool('ANTISPAM_TOGGLE', True)
+        
+        gb_str = self._get('GROUP_BLACKLIST', '')
+        self.GROUP_BLACKLIST = gb_str.split() if gb_str else []
+        
+        self.GLOBALANNOUNCE = self._getbool('GLOBALANNOUNCE', False)
+        self.BACKUP_PASS = self._get('BACKUP_PASS', None)
+        self.SIBYL_KEY = self._get('SIBYL_KEY', None)
+        self.SIBYL_ENDPOINT = self._get('SIBYL_ENDPOINT', 'https://psychopass.kaizoku.cyou')
+
+        return self
 
     def init_sw(self):
         if self.spamwatch_api is None:
-            log.warning("SpamWatch API key is missing! Check your config.ini")
+            log.warning("SpamWatch API key is missing!")
             return None
         else:
             try:
-                sw = spamwatch.Client(spamwatch_api)
+                sw = spamwatch.Client(self.spamwatch_api)
                 return sw
             except:
                 sw = None
@@ -154,7 +203,24 @@ class KigyoINIT:
                 return sw
 
 
-KInit = KigyoINIT(parser=kigconfig)
+# ═══════════════════════════════════════════════════════════
+# تحميل الإعدادات
+# ═══════════════════════════════════════════════════════════
+
+if config_file_exists:
+    try:
+        kigconfig = parser["kigconfig"]
+        KInit = KigyoINIT(parser=kigconfig, use_env=False).load_config()
+    except KeyError:
+        log.info("kigconfig section مش موجود في config.ini - نستخدم env vars")
+        KInit = KigyoINIT(parser=None, use_env=True).load_config()
+else:
+    KInit = KigyoINIT(parser=None, use_env=True).load_config()
+
+
+# ═══════════════════════════════════════════════════════════
+# تصدير المتغيرات
+# ═══════════════════════════════════════════════════════════
 
 OWNER_ID = KInit.OWNER_ID
 OWNER_USERNAME = KInit.OWNER_USERNAME
@@ -200,10 +266,10 @@ GLOBALANNOUNCE = KInit.GLOBALANNOUNCE
 BACKUP_PASS = KInit.BACKUP_PASS
 SIBYL_KEY = KInit.SIBYL_KEY
 SIBYL_ENDPOINT = KInit.SIBYL_ENDPOINT
-BOT_ID = TOKEN.split(":")[0]
+BOT_ID = TOKEN.split(":")[0] if TOKEN else "0"
 
 # ═══════════════════════════════════════
-# اعداد الاشتراك الاجباري
+# الاشتراك الاجباري
 # ═══════════════════════════════════════
 FORCE_SUB_CHANNEL = KInit.FORCE_SUB_CHANNEL
 
@@ -212,18 +278,19 @@ if IS_DEBUG:
     stream_handler.setLevel(logging.DEBUG)
 
 
-sibylClient: PsychoPass = None
+# ═══════════════════════════════════════════════════════════
+# Sibyl System
+# ═══════════════════════════════════════════════════════════
+
+sibylClient = None
 
 if SIBYL_KEY:
     try:
         sibylClient = PsychoPass(SIBYL_KEY, show_license=False, host=SIBYL_ENDPOINT)
-        log.info("Connected to Sibyl System, NONA Tower")
+        log.info("Connected to Sibyl System")
     except Exception as e:
         sibylClient = None
-        log.warning(
-            f"Failed to load SibylSystem due to {e.with_traceback(e.__traceback__)}",
-        )
-
+        log.warning(f"Failed to load SibylSystem: {e}")
 
 try:
     IS_DEBUG = IS_DEBUG
@@ -238,21 +305,44 @@ except AttributeError:
 # SpamWatch
 sw = KInit.init_sw()
 
+
+# ═══════════════════════════════════════════════════════════
+# Database Session
+# ═══════════════════════════════════════════════════════════
+
 from tg_bot.modules.sql import SESSION
 
-updater: Updater = tg.Updater(token=TOKEN, base_url=KInit.BOT_API_URL, base_file_url=KInit.BOT_API_FILE_URL, workers=min(32, os.cpu_count() + 4), request_kwargs={"read_timeout": 10, "connect_timeout": 10})
+
+# ═══════════════════════════════════════════════════════════
+# Updater & Dispatcher
+# ═══════════════════════════════════════════════════════════
+
+updater = tg.Updater(
+    token=TOKEN,
+    base_url=KInit.BOT_API_URL,
+    base_file_url=KInit.BOT_API_FILE_URL,
+    workers=min(32, os.cpu_count() + 4),
+    request_kwargs={"read_timeout": 10, "connect_timeout": 10}
+)
 
 telethn = TelegramClient(MemorySession(), APP_ID, API_HASH)
-dispatcher: Dispatcher = updater.dispatcher
-j: JobQueue = updater.job_queue
+dispatcher = updater.dispatcher
+j = updater.job_queue
 
 
-# Load at end to ensure all prev variables have been set
+# ═══════════════════════════════════════════════════════════
+# Load CustomCommandHandler
+# ═══════════════════════════════════════════════════════════
+
 from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
 
 if CUSTOM_CMD and len(CUSTOM_CMD) >= 1:
     tg.CommandHandler = CustomCommandHandler
 
+
+# ═══════════════════════════════════════════════════════════
+# AntiSpam Module
+# ═══════════════════════════════════════════════════════════
 
 try:
     from tg_bot.antispam import antispam_restrict_user, antispam_cek_user, detect_user
@@ -262,9 +352,10 @@ except ModuleNotFoundError:
     antispam_module = False
 
 
-# ═══════════════════════════════════════
-# دالة فحص الاشتراك الاجباري
-# ═══════════════════════════════════════
+# ═══════════════════════════════════════════════════════════
+# دوال الاشتراك الاجباري
+# ═══════════════════════════════════════════════════════════
+
 def check_force_sub(bot, user_id):
     """فحص اذا المستخدم مشترك في القناة"""
     if not FORCE_SUB_CHANNEL:
@@ -298,6 +389,10 @@ def force_sub_message():
     return text, keyboard
 
 
+# ═══════════════════════════════════════════════════════════
+# SpamCheck Decorator
+# ═══════════════════════════════════════════════════════════
+
 def spamcheck(func):
     @wraps(func)
     def check_user(update, context, *args, **kwargs):
@@ -307,17 +402,16 @@ def spamcheck(func):
             message = update.effective_message
         except AttributeError:
             return
+
         if IS_DEBUG:
-            print("{} | {} | {} | {}".format(message.text or message.caption, user.id, message.chat.title, chat.id))
-        # If msg from self, return True
+            print("{} | {} | {} | {}".format(
+                message.text or message.caption, user.id, message.chat.title, chat.id
+            ))
+
         if user.id == context.bot.id:
             return False
         elif user.id == "777000":
             return False
-        
-        # ═══════════════════════════════════════
-        # فحص الاشتراك الاجباري
-        # ═══════════════════════════════════════
         elif FORCE_SUB_CHANNEL and not check_force_sub(context.bot, user.id):
             text, keyboard = force_sub_message()
             try:
@@ -325,7 +419,6 @@ def spamcheck(func):
             except:
                 pass
             return False
-        
         elif antispam_module and ANTISPAM_TOGGLE:
             parsing_date = time.mktime(message.date.timetuple())
             if detect_user(user.id, chat.id, message, parsing_date):
@@ -337,5 +430,7 @@ def spamcheck(func):
             dispatcher.bot.sendMessage(chat.id, "هالقروب في القائمة السوداء، باي...")
             dispatcher.bot.leaveChat(chat.id)
             return False
+
         return func(update, context, *args, **kwargs)
+
     return check_user
