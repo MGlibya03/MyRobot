@@ -17,17 +17,16 @@ try:
 except:
     CUSTOM_CMD = False
 
-CMD_STARTERS = CUSTOM_CMD or ["/", "!"]
+if CUSTOM_CMD and isinstance(CUSTOM_CMD, (list, tuple)) and len(CUSTOM_CMD) > 0:
+    CMD_STARTERS = list(CUSTOM_CMD)
+else:
+    CMD_STARTERS = ["/", "!", ">"]
 
-
-# ═══════════════════════════════════════════════════════════
-# دالة تحويل الأوامر لـ list of strings بشكل آمن
-# ═══════════════════════════════════════════════════════════
 
 def _ensure_string_list(command):
     """
     يحول اي نوع (str, list, tuple, متداخلة) الى list of strings
-    هذا يمنع خطأ 'tuple' object has no attribute 'lower'
+    يمنع خطأ 'tuple' object has no attribute 'lower'
     """
     result = []
 
@@ -38,7 +37,6 @@ def _ensure_string_list(command):
             if isinstance(item, str):
                 result.append(item.lower())
             elif isinstance(item, (list, tuple)):
-                # تفكيك المتداخلة
                 for sub_item in item:
                     if isinstance(sub_item, str):
                         result.append(sub_item.lower())
@@ -51,10 +49,6 @@ def _ensure_string_list(command):
 
     return result
 
-
-# ═══════════════════════════════════════════════════════════
-# AntiSpam
-# ═══════════════════════════════════════════════════════════
 
 class AntiSpam:
     def __init__(self):
@@ -87,10 +81,6 @@ SpamChecker = AntiSpam()
 MessageHandlerChecker = AntiSpam()
 
 
-# ═══════════════════════════════════════════════════════════
-# CustomCommandHandler - يدعم العربي والإنجليزي
-# ═══════════════════════════════════════════════════════════
-
 class CustomCommandHandler(tg.Handler):
     """
     معالج أوامر مخصص يدعم العربي والإنجليزي
@@ -99,10 +89,8 @@ class CustomCommandHandler(tg.Handler):
     def __init__(self, command, callback, run_async=True, **kwargs):
         super().__init__(callback, run_async=run_async)
 
-        # ✅ استخدام الدالة الآمنة لتحويل الأوامر
         self.command = _ensure_string_list(command)
 
-        # حذف admin_ok لو موجود لأنه مش معامل رسمي
         if "admin_ok" in kwargs:
             del kwargs["admin_ok"]
 
@@ -149,10 +137,6 @@ class CustomCommandHandler(tg.Handler):
         return None
 
 
-# ═══════════════════════════════════════════════════════════
-# CustomMessageHandler
-# ═══════════════════════════════════════════════════════════
-
 class CustomMessageHandler(MessageHandler):
     def __init__(self, pattern, callback, run_async=True, friendly="", **kwargs):
         super().__init__(pattern, callback, run_async=run_async, **kwargs)
@@ -172,7 +156,4 @@ class CustomMessageHandler(MessageHandler):
             return False
 
 
-# ═══════════════════════════════════════════════════════════
-# Alias للتوافق
-# ═══════════════════════════════════════════════════════════
 CommandHandler = CustomCommandHandler
