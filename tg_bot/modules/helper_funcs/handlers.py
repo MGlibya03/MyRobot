@@ -20,6 +20,42 @@ except:
 CMD_STARTERS = CUSTOM_CMD or ["/", "!"]
 
 
+# ═══════════════════════════════════════════════════════════
+# دالة تحويل الأوامر لـ list of strings بشكل آمن
+# ═══════════════════════════════════════════════════════════
+
+def _ensure_string_list(command):
+    """
+    يحول اي نوع (str, list, tuple, متداخلة) الى list of strings
+    هذا يمنع خطأ 'tuple' object has no attribute 'lower'
+    """
+    result = []
+
+    if isinstance(command, str):
+        result.append(command.lower())
+    elif isinstance(command, (list, tuple)):
+        for item in command:
+            if isinstance(item, str):
+                result.append(item.lower())
+            elif isinstance(item, (list, tuple)):
+                # تفكيك المتداخلة
+                for sub_item in item:
+                    if isinstance(sub_item, str):
+                        result.append(sub_item.lower())
+                    else:
+                        result.append(str(sub_item).lower())
+            else:
+                result.append(str(item).lower())
+    else:
+        result.append(str(command).lower())
+
+    return result
+
+
+# ═══════════════════════════════════════════════════════════
+# AntiSpam
+# ═══════════════════════════════════════════════════════════
+
 class AntiSpam:
     def __init__(self):
         self.whitelist = (
@@ -51,29 +87,33 @@ SpamChecker = AntiSpam()
 MessageHandlerChecker = AntiSpam()
 
 
+# ═══════════════════════════════════════════════════════════
+# CustomCommandHandler - يدعم العربي والإنجليزي
+# ═══════════════════════════════════════════════════════════
+
 class CustomCommandHandler(tg.Handler):
     """
     معالج أوامر مخصص يدعم العربي والإنجليزي
+    يقبل str, list, tuple بدون أخطاء
     """
     def __init__(self, command, callback, run_async=True, **kwargs):
         super().__init__(callback, run_async=run_async)
-        
-        if isinstance(command, str):
-            self.command = [command.lower()]
-        else:
-            self.command = [cmd.lower() for cmd in command]
-        
+
+        # ✅ استخدام الدالة الآمنة لتحويل الأوامر
+        self.command = _ensure_string_list(command)
+
+        # حذف admin_ok لو موجود لأنه مش معامل رسمي
         if "admin_ok" in kwargs:
             del kwargs["admin_ok"]
-        
+
         self.filters = kwargs.get('filters', Filters.all)
 
     def check_update(self, update):
         if not isinstance(update, Update) or not update.effective_message:
             return None
-        
+
         message = update.effective_message
-        
+
         try:
             user_id = update.effective_user.id
         except:
@@ -81,7 +121,7 @@ class CustomCommandHandler(tg.Handler):
 
         if message.text and len(message.text) > 1:
             fst_word = message.text.split(None, 1)[0]
-            
+
             if len(fst_word) > 1 and any(fst_word.startswith(start) for start in CMD_STARTERS):
                 args = message.text.split()[1:]
                 command = fst_word[1:].split("@")
@@ -100,20 +140,24 @@ class CustomCommandHandler(tg.Handler):
                     filter_result = self.filters(update)
                 else:
                     filter_result = True
-                
+
                 if filter_result:
                     return args, filter_result
                 else:
                     return False
-        
+
         return None
 
+
+# ═══════════════════════════════════════════════════════════
+# CustomMessageHandler
+# ═══════════════════════════════════════════════════════════
 
 class CustomMessageHandler(MessageHandler):
     def __init__(self, pattern, callback, run_async=True, friendly="", **kwargs):
         super().__init__(pattern, callback, run_async=run_async, **kwargs)
         self.friendly = friendly or pattern
-    
+
     def check_update(self, update):
         if isinstance(update, Update) and update.effective_message:
             try:
@@ -128,5 +172,7 @@ class CustomMessageHandler(MessageHandler):
             return False
 
 
+# ═══════════════════════════════════════════════════════════
 # Alias للتوافق
+# ═══════════════════════════════════════════════════════════
 CommandHandler = CustomCommandHandler
