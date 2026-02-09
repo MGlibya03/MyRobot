@@ -55,8 +55,6 @@ except ImportError:
                 return False
 
 from tg_bot.modules.helper_funcs.misc import paginate_modules
-
-# استيراد CustomCommandHandler
 from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
 
 
@@ -87,7 +85,7 @@ except:
 
 
 # ═══════════════════════════════════════════════════════════
-# رسالة الترحيب الرئيسية - زورو بوت
+# رسالة الترحيب الرئيسية - زورو بوت 🇱🇾
 # ═══════════════════════════════════════════════════════════
 
 PM_START_TEXT = """
@@ -109,6 +107,7 @@ PM_START_TEXT = """
 ✅ فلاتر وملاحظات ذكية
 ✅ ترحيب مخصص
 ✅ دعم كامل للعربي 🇱🇾
+✅ اوامر عربية بدون /
 
 💡 اضغط *المساعدة* باش تعرف اوامري!
 """
@@ -123,6 +122,9 @@ HELP_STRINGS = """
 👨‍💻 *المبرمج:* @{}
 
 ✨ *اضغط على الازرار باش تعرف الاوامر المتاحة:*
+
+💡 كل الاوامر تشتغل بالعربي وبالانجليزي!
+مثال: /ban = /حظر
 """.format(OWNER_USERNAME)
 
 
@@ -174,7 +176,7 @@ for module_name in ALL_MODULES:
 
 
 # ═══════════════════════════════════════════════════════════
-# الردود الذكية - لهجة ليبية
+# الردود الذكية - لهجة ليبية 🇱🇾
 # ═══════════════════════════════════════════════════════════
 
 SMART_REPLIES = {
@@ -187,7 +189,7 @@ SMART_REPLIES = {
     "سبحان الله": "سبحان الله وبحمده 🕌",
     "الله اكبر": "الله اكبر كبيرا 🕌",
     "لا اله الا الله": "محمد رسول الله ﷺ",
-    
+
     # التحيات اليومية
     "صباح الخير": "صباح النور والسرور يا باهي 🌅",
     "مساء الخير": "مساء الورد والياسمين يا غالي 🌙",
@@ -195,7 +197,7 @@ SMART_REPLIES = {
     "رمضان كريم": "الله اكرم، كل عام وانت بخير 🌙",
     "عيد مبارك": "عساك من عواده يا غالي 🎉",
     "تصبح على خير": "وانت من اهل الخير يا باهي 🌙",
-    
+
     # الدعاء
     "بارك الله فيك": "وفيك بارك الله 🤲",
     "جزاك الله خير": "واياك يا غالي 🤲",
@@ -203,7 +205,7 @@ SMART_REPLIES = {
     "ان شاء الله": "ان شاء الله رب العالمين 🤲",
     "يارب": "اللهم امين 🤲",
     "اللهم امين": "امين يارب العالمين 🤲",
-    
+
     # الردود على الاهانات
     "بوت": "اسمي زورو مش بوت يا زول! انا اذكى منك 😏",
     "يا بوت": "قلتلك اسمي زورو! شكلك ما تفهمش 🙄",
@@ -216,7 +218,7 @@ SMART_REPLIES = {
     "حمار": "حمار بوك 🫏",
     "يا واد": "واد جدك! انا زورو 😎",
     "يا ولد": "ولد جدك يا زول 😏",
-    
+
     # الاحوال
     "كيفك": "والله تمام زي الفل، كيفك انت يا باهي؟ 😊",
     "كيف حالك": "الحمد لله باهي، انت كيفك يا غالي؟ 💚",
@@ -224,13 +226,13 @@ SMART_REPLIES = {
     "شنو تسوي": "قاعد نستنى فيك 😴",
     "وين انت": "هنا يا غالي! وينك انت؟ 📍",
     "باهي": "الحمد لله، انت كيفك؟ 💚",
-    
+
     # الضحك
     "ههههه": "😂😂😂 خلاص ضحكتني",
     "هههه": "ايوا اضحك اضحك 😂",
     "ههه": "😂",
     "لول": "😂😂",
-    
+
     # المشاعر
     "زهقت": "وانا زهقت منك يا زول 😴",
     "ملل": "روح العب برا 🎮",
@@ -241,25 +243,25 @@ SMART_REPLIES = {
     "فرحان": "ربي يديم الفرحة عليك 🎉",
     "مريض": "سلامتك يا غالي، ربي يشفيك 🤲",
     "تعبان": "ارتاح شوية يا زول 💚",
-    
+
     # الاوامر
     "تعال": "وين نمشو؟ 🚶",
     "روح": "لا انت روح 👋",
     "اطلع": "طلعني معاك 😂",
     "اسكت": "لا انت اسكت 🤫",
-    
+
     # الكلام
     "كلام فاضي": "كلامك انت الفاضي 😏",
     "شكلك": "شكلي احلى منك 😎",
     "وجهك": "وجهي احلى من وجهك 💅",
-    
+
     # الكلمات الليبية
     "توا": "ايه توا شنو تبي؟ 🤔",
     "علاش": "علاش شنو يا زول؟ 🤔",
     "كان": "كان شنو؟ قول 🤔",
     "برشا": "ايه برشا برشا 😂",
     "شوية": "شوية شوية يا غالي 😊",
-    
+
     # الحب
     "احبك": "وانا نحبك اكثر يا قلبي 💕",
     "بحبك": "وانا نحبك موت 💕",
@@ -277,7 +279,7 @@ SMART_REPLIES = {
     "اشتقت": "وانا اشتقت اكثر 💕",
     "تعال حضني": "تعال يا قلبي 🤗💕",
     "بوسة": "💋💕",
-    
+
     # المدح
     "قمر": "انت القمر يا باهي 🌙",
     "حلو": "انت الاحلى 💕",
@@ -288,23 +290,23 @@ SMART_REPLIES = {
     "عزيز": "وانت اعز 💚",
     "يا ورد": "انت الورد كله 🌹",
     "يا زين": "زين الباهيين 💕",
-    
+
     # الشكر
     "شكرا": "يعطيك الصحة يا غالي 💚",
     "مشكور": "العفو يا باهي 💚",
     "عفوا": "ولا يهمك 💚",
-    
+
     # الترحيب
     "اهلا": "هلا والله نورت 💚",
     "مرحبا": "مرحبتين فيك يا غالي 🌟",
     "هاي": "هاي يا باهي 👋",
     "هلا": "هلا بيك يا زول 💚",
-    
+
     # الوداع
     "باي": "مع السلامة يا غالي 👋💚",
     "مع السلامة": "الله يسلمك، باي 👋",
     "يلا باي": "يلا مع السلامة 👋",
-    
+
     # الاسئلة
     "صاحي": "صاحي ومنتبه 👀",
     "نايم": "لا صاحي معاك 😊",
@@ -319,7 +321,7 @@ SMART_REPLIES = {
     "كم": "واحد زيك 😂",
     "مين": "مين يكون؟ 🤔",
     "شكون": "شكون هو؟ 🤔",
-    
+
     # عن البوت
     "انت مين": "انا زورو البوت الذكي 🤖💪",
     "اسمك": "اسمي زورو يا غالي 🤖",
@@ -412,7 +414,10 @@ def start(update: Update, context: CallbackContext):
                 parse_mode=ParseMode.MARKDOWN,
             )
     else:
-        update.effective_message.reply_text("هلا! انا زورو 🤖\nاكتب /help باش تعرف اوامري!")
+        update.effective_message.reply_text(
+            "هلا! انا زورو 🤖\n"
+            "اكتب /help او /مساعدة باش تعرف اوامري!"
+        )
 
 
 # ═══════════════════════════════════════════════════════════
@@ -438,7 +443,8 @@ def zoro_callback(update: Update, context: CallbackContext):
 • ادارة كاملة للقروبات
 • حماية من السبام
 • فلاتر ذكية
-• ردود تلقائية ليبية
+• ردود تلقائية ليبية 🇱🇾
+• اوامر عربية بدون /
 • دعم كامل للعربي
 
 💚 شكرا لاستخدامك زورو!
@@ -607,7 +613,7 @@ def smart_reply(update: Update, context: CallbackContext):
     if not text:
         return
 
-    if text.startswith('/') or text.startswith('!'):
+    if text.startswith('/') or text.startswith('!') or text.startswith('>'):
         return
 
     if len(text.strip()) < 2:
@@ -682,12 +688,12 @@ def settings_button(update: Update, context: CallbackContext):
     query = update.callback_query
     user = update.effective_user
     bot = context.bot
-    
+
     mod_match = re.match(r"stngs_module\((.+?),(.+?)\)", query.data)
     prev_match = re.match(r"stngs_prev\((.+?),(.+?)\)", query.data)
     next_match = re.match(r"stngs_next\((.+?),(.+?)\)", query.data)
     back_match = re.match(r"stngs_back\((.+?)\)", query.data)
-    
+
     try:
         if mod_match:
             chat_id = mod_match.group(1)
@@ -700,10 +706,11 @@ def settings_button(update: Update, context: CallbackContext):
                 text=text,
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=InlineKeyboardMarkup(
-                    [[InlineKeyboardButton(text="🔙 رجوع", callback_data="stngs_back({})".format(chat_id))]]
+                    [[InlineKeyboardButton(text="🔙 رجوع",
+                                           callback_data="stngs_back({})".format(chat_id))]]
                 ),
             )
-            
+
         elif prev_match:
             chat_id = prev_match.group(1)
             curr_page = int(prev_match.group(2))
@@ -713,7 +720,7 @@ def settings_button(update: Update, context: CallbackContext):
                     paginate_modules(curr_page - 1, CHAT_SETTINGS, "stngs", chat=chat_id)
                 ),
             )
-            
+
         elif next_match:
             chat_id = next_match.group(1)
             next_page = int(next_match.group(2))
@@ -723,7 +730,7 @@ def settings_button(update: Update, context: CallbackContext):
                     paginate_modules(next_page + 1, CHAT_SETTINGS, "stngs", chat=chat_id)
                 ),
             )
-            
+
         elif back_match:
             chat_id = back_match.group(1)
             query.message.edit_text(
@@ -732,9 +739,9 @@ def settings_button(update: Update, context: CallbackContext):
                     paginate_modules(0, CHAT_SETTINGS, "stngs", chat=chat_id)
                 ),
             )
-            
+
         query.answer()
-        
+
     except BadRequest as excp:
         if excp.message not in ["Message is not modified", "Query_id_invalid", "Message can't be deleted"]:
             log.exception("خطا في settings_button: %s", str(query.data))
@@ -747,19 +754,19 @@ def settings_button(update: Update, context: CallbackContext):
 @spamcheck
 def stats(update: Update, context: CallbackContext):
     user = update.effective_user
-    
+
     if user.id != OWNER_ID:
         update.effective_message.reply_text("⛔ هذا الامر للمطور فقط!")
         return
-    
+
     stats_text = "📊 *احصائيات زورو:*\n\n"
-    
+
     for mod in STATS:
         try:
             stats_text += mod.__stats__() + "\n"
         except:
             pass
-    
+
     update.effective_message.reply_text(stats_text, parse_mode=ParseMode.MARKDOWN)
 
 
@@ -785,7 +792,7 @@ def error_handler(update: Update, context: CallbackContext):
 
 
 # ═══════════════════════════════════════════════════════════
-# دالة الهجرة (نقل المجموعات)
+# دالة الهجرة
 # ═══════════════════════════════════════════════════════════
 
 def migrate_chats(update: Update, context: CallbackContext):
@@ -800,7 +807,7 @@ def migrate_chats(update: Update, context: CallbackContext):
         return
 
     log.info("Migrating from %s to %s", str(old_chat), str(new_chat))
-    
+
     for mod in MIGRATEABLE:
         try:
             mod.__migrate__(old_chat, new_chat)
@@ -813,35 +820,41 @@ def migrate_chats(update: Update, context: CallbackContext):
 # ═══════════════════════════════════════════════════════════
 
 def main():
-    # تسجيل الاوامر الاساسية - بدون همزات
-    start_handler = CustomCommandHandler(["start", "ابدا", "بداية"], start, run_async=True)
-    help_handler = CustomCommandHandler(["help", "مساعدة", "مساعده", "اوامر", "الاوامر"], help_command, run_async=True)
-    stats_handler = CustomCommandHandler(["stats", "احصائيات", "الاحصائيات"], stats, run_async=True)
-    
+    # تسجيل الاوامر الاساسية - عربي + انجليزي
+    start_handler = CustomCommandHandler(
+        ["start", "ابدا", "بداية"], start, run_async=True
+    )
+    help_handler = CustomCommandHandler(
+        ["help", "مساعدة", "مساعده", "اوامر", "الاوامر"], help_command, run_async=True
+    )
+    stats_handler = CustomCommandHandler(
+        ["stats", "احصائيات", "الاحصائيات"], stats, run_async=True
+    )
+
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(help_handler)
     dispatcher.add_handler(stats_handler)
-    
+
     # ازرار Callbacks
     dispatcher.add_handler(CallbackQueryHandler(help_button, pattern=r"help_"))
     dispatcher.add_handler(CallbackQueryHandler(zoro_callback, pattern=r"zoro_"))
     dispatcher.add_handler(CallbackQueryHandler(settings_button, pattern=r"stngs_"))
-    
+
     # الردود الذكية (اقل اولوية)
     dispatcher.add_handler(MessageHandler(
         Filters.text & ~Filters.command & Filters.chat_type.groups,
         smart_reply
     ), group=99)
-    
+
     # معالج الهجرة
     dispatcher.add_handler(MessageHandler(Filters.status_update.migrate, migrate_chats))
-    
+
     # معالج الاخطاء
     dispatcher.add_error_handler(error_handler)
-    
-    log.info("🤖 زورو بوت يعمل الان!")
+
+    log.info("🤖 زورو بوت يعمل الان! 🇱🇾")
     log.info("👨‍💻 المبرمج: @%s", OWNER_USERNAME)
-    
+
     if WEBHOOK:
         log.info("Using webhooks...")
         updater.start_webhook(
@@ -861,7 +874,7 @@ def main():
             read_latency=4,
             drop_pending_updates=True
         )
-    
+
     # تشغيل Telethon
     try:
         telethn.run_until_disconnected()
@@ -876,6 +889,6 @@ if __name__ == "__main__":
         import subprocess
         subprocess.check_call(["pip", "install", "googletrans==3.1.0a0"])
         import googletrans
-    
+
     log.info("Successfully loaded modules: " + str(ALL_MODULES))
     main()
