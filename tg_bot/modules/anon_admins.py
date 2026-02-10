@@ -33,7 +33,7 @@ def promoteanon(update: Update, context: CallbackContext) -> Optional[str]:
     user = update.effective_user
 
     if chat.type == "private":
-        message.reply_text("This command is meant to be used in groups not PM!")
+        message.reply_text("❌ هذا الأمر يشتغل فالقروبات مش فالخاص!")
 
     user_id, title = extract_user_and_text(message, args)
 
@@ -44,26 +44,25 @@ def promoteanon(update: Update, context: CallbackContext) -> Optional[str]:
     try:
         user_member = chat.get_member(user_id)
     except Exception as e:
-        message.reply_text("Error:\n`{}`".format(e))
+        message.reply_text("❌ خطأ:\n`{}`".format(e))
         return
 
     if user_member.status == "creator":
-        message.reply_text("This user is the chat creator, he can manage his own stuff!")
+        message.reply_text("👑 هذا مؤسس القروب، يقدر يدير أموره بروحه!")
         return
 
     if getattr(user_member, "is_anonymous") is True:
-        message.reply_text("This user is already anonymous!")
+        message.reply_text("🕶️ هذا المستخدم مجهول أصلاً!")
         return
 
     if user_id == bot.id:
-        message.reply_text("Yeah, I wish I could promote myself...")
+        message.reply_text("😅 ياريت نقدر نرقي روحي...")
         return
 
-    # set same perms as bot - bot can't assign higher perms than itself!
+    # نحط نفس صلاحيات البوت - البوت ما يقدر يعطي صلاحيات أعلى من صلاحياته!
     bot_member = get_bot_member(chat.id)
-    # set same perms as user -  to keep the other perms untouched!
+    # نحط نفس صلاحيات المستخدم - باش نخلي الصلاحيات الثانية ما تتغيرش!
     u_member = chat.get_member(user_id)
-    # the perms may be not same as old ones if the bot doesn't have the rights to change them but can't do anything about it
 
     try:
         if title:
@@ -85,9 +84,9 @@ def promoteanon(update: Update, context: CallbackContext) -> Optional[str]:
 
         )
 
-        rmsg = f"<b>{user_member.user.first_name or user_id}</b> is now anonymous"
+        rmsg = f"🕶️ <b>{user_member.user.first_name or user_id}</b> توا صار مجهول"
         if title:
-            rmsg += f" with title <code>{html.escape(title)}</code>"
+            rmsg += f" باللقب <code>{html.escape(title)}</code>"
         bot.sendMessage(
             chat.id,
             rmsg,
@@ -95,17 +94,17 @@ def promoteanon(update: Update, context: CallbackContext) -> Optional[str]:
         ) 
     except BadRequest as err:
         if err.message == "User_not_mutual_contact":
-            message.reply_text("How am I mean to promote someone who isn't in the group?")
+            message.reply_text("🤔 كيف نرقي واحد مش موجود فالقروب؟")
         else:
-            message.reply_text("An error occurred while promoting.")
+            message.reply_text("❌ صار خطأ وقت الترقية!")
         return
 
     log_message = (
         f"<b>{html.escape(chat.title)}:</b>\n"
-        f"#PROMOTED\n"
-        f"Anonymous\n"
-        f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-        f"<b>User:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
+        f"#ترقية\n"
+        f"🕶️ مجهول\n"
+        f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+        f"<b>المستخدم:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
     )
 
     return log_message
@@ -125,7 +124,7 @@ def demoteanon(update: Update, context: CallbackContext) -> Optional[str]:
     user = update.effective_user
 
     if chat.type == "private":
-        message.reply_text("This command is meant to be used in groups not PM!")
+        message.reply_text("❌ هذا الأمر يشتغل فالقروبات مش فالخاص!")
 
     user_id = extract_user(message, args)
 
@@ -135,34 +134,33 @@ def demoteanon(update: Update, context: CallbackContext) -> Optional[str]:
     try:
         user_member = chat.get_member(user_id)
     except Exception as e:
-        message.reply_text("Error:\n`{}`".format(e))
+        message.reply_text("❌ خطأ:\n`{}`".format(e))
         return
 
     if user_member.status == "creator" and user_id == user.id:
-        message.reply_text("meh")
+        message.reply_text("🤷 مه...")
         return
 
     if user_member.status == "creator":
-        message.reply_text("This person is the chat CREATOR, find someone else to play with.")
+        message.reply_text("👑 هذا مؤسس القروب، دور على واحد ثاني تلعب معاه!")
         return
 
     if user_member.status != "administrator":
-        message.reply_text("This user isn't an admin!")
+        message.reply_text("❌ هذا المستخدم مش أدمن!")
         return
 
     if getattr(user_member, "is_anonymous") is False:
-        message.reply_text("This user isn't anonymous!")
+        message.reply_text("👤 هذا المستخدم مش مجهول أصلاً!")
         return
 
     if user_id == bot.id:
-        message.reply_text("I can't demote myself! Get an admin to do it for me.")
+        message.reply_text("❌ ما نقدرش ننزل روحي! خلي أدمن ثاني يسويها.")
         return
 
-    # set same perms as bot - bot can't assign higher perms than itself!
+    # نحط نفس صلاحيات البوت - البوت ما يقدر يعطي صلاحيات أعلى من صلاحياته!
     bot_member = get_bot_member(chat.id)
-    # set same perms as user -  to keep the other perms untouched!
+    # نحط نفس صلاحيات المستخدم - باش نخلي الصلاحيات الثانية ما تتغيرش!
     u_member = chat.get_member(user_id)
-    # the perms may be not same as old ones if the bot doesn't have the rights to change them but can't do anything about it
 
     try:
         bot.promoteChatMember(
@@ -181,7 +179,7 @@ def demoteanon(update: Update, context: CallbackContext) -> Optional[str]:
             can_manage_voice_chats=bool(bot_member.can_manage_voice_chats and u_member.can_manage_voice_chats),
         )
 
-        rmsg = f"<b>{user_member.user.first_name or user_id}</b> is no longer anonymous"
+        rmsg = f"👤 <b>{user_member.user.first_name or user_id}</b> توا ما عادش مجهول"
         bot.sendMessage(
             chat.id,
             rmsg,
@@ -190,16 +188,16 @@ def demoteanon(update: Update, context: CallbackContext) -> Optional[str]:
 
         log_message = (
             f"<b>{html.escape(chat.title)}:</b>\n"
-            f"#DEMOTED\n"
-            f"Non anonymous\n"
-            f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-            f"<b>User:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
+            f"#تنزيل\n"
+            f"👤 إلغاء المجهولية\n"
+            f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+            f"<b>المستخدم:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
         )
 
         return log_message
 
     except BadRequest as e:
         message.reply_text(
-            f"Could not demote!\n{str(e)}"
+            f"❌ ما قدرتش ننزله!\n{str(e)}"
         )
         return
