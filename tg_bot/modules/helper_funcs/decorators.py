@@ -55,7 +55,9 @@ ARABIC_COMMANDS = {
     "mute": ["كتم", "اسكت"],
     "smute": ["كتم_صامت"],
     "dmute": ["كتم_ومسح"],
+    "dsmute": ["كتم_صامت_ومسح"],
     "tmute": ["كتم_مؤقت"],
+    "tempmute": ["كتم_مؤقت٢"],
     "unmute": ["رفع_الكتم", "فك_الكتم"],
     "warn": ["تحذير", "انذار"],
     "swarn": ["تحذير_صامت"],
@@ -128,7 +130,9 @@ ARABIC_COMMANDS = {
     "gbanstat": ["حالة_الحظر_العام"],
     "sibylban": ["حظر_سيبيل"],
     "info": ["معلومات"],
+    "u": ["م"],
     "id": ["الايدي", "ايدي"],
+    "gifid": ["ايدي_الصورة"],
     "setbio": ["ضبط_البايو"],
     "bio": ["البايو"],
     "setme": ["ضبط_معلوماتي"],
@@ -163,6 +167,7 @@ ARABIC_COMMANDS = {
     "video": ["فيديو"],
     "lyrics": ["كلمات"],
     "yt": ["يوتيوب"],
+    "youtube": ["يوتيوب٢"],
     "ytdl": ["تحميل_يوتيوب"],
     "magisk": ["ماجسك"],
     "device": ["جهاز"],
@@ -186,11 +191,24 @@ ARABIC_COMMANDS = {
     "logchannel": ["سجل_القناة"],
     "setlog": ["ضبط_السجل"],
     "unsetlog": ["حذف_السجل"],
+    "logsettings": ["اعدادات_السجل"],
     "import": ["استيراد"],
     "export": ["تصدير"],
     "announce": ["اعلان"],
     "setanon": ["مجهول"],
     "unsetanon": ["الغاء_مجهول"],
+    "ignore": ["تجاهل"],
+    "notice": ["الغاء_التجاهل"],
+    "ignoredlist": ["قائمة_المتجاهلين"],
+    "whois": ["مين_هذا"],
+    "pfp": ["الصورة"],
+    "echo": ["ردد"],
+    "ping": ["بنج"],
+    "uptime": ["مدة_التشغيل"],
+    "print": ["طباعة"],
+    "resetantispam": ["اعادة_السبام"],
+    "reverse": ["بحث_صورة"],
+    "tts": ["صوت"],
     "newfed": ["اتحاد_جديد"],
     "renamefed": ["تغيير_اسم_الاتحاد"],
     "delfed": ["حذف_الاتحاد"],
@@ -215,20 +233,6 @@ ARABIC_COMMANDS = {
     "fbanstat": ["حالة_حظر_الاتحاد"],
     "fednotif": ["اشعارات_الاتحاد"],
     "frules": ["قوانين_الاتحاد"],
-    "bank": ["البنك"],
-    "balance": ["رصيدي", "رصيد"],
-    "daily": ["اليومي", "يومي"],
-    "transfer": ["تحويل"],
-    "shop": ["المتجر", "متجر"],
-    "dice": ["نرد"],
-    "luck": ["حظي"],
-    "bet": ["رهان"],
-    "rob": ["سرقة_بنك"],
-    "top": ["الترتيب"],
-    "leaderboard": ["المتصدرين"],
-    "lang": ["اللغة"],
-    "setlang": ["ضبط_اللغة"],
-    "tts": ["صوت"],
     "currency": ["عملة"],
     "debug": ["تصحيح"],
     "eval": ["تنفيذ"],
@@ -236,6 +240,8 @@ ARABIC_COMMANDS = {
     "ev": ["تنفيذ٣"],
     "eva": ["تنفيذ٤"],
     "sh": ["شل"],
+    "lang": ["اللغة"],
+    "setlang": ["ضبط_اللغة"],
 }
 
 
@@ -246,24 +252,19 @@ ARABIC_COMMANDS = {
 def get_arabic_aliases(command):
     """يرجع قائمة الأوامر العربية المقابلة للأمر الإنجليزي"""
 
-    # تحويل tuple الى list
     if isinstance(command, tuple):
         command = list(command)
 
-    # تحويل str الى list
     if isinstance(command, str):
         command = [command]
 
-    # الآن command دائماً list
     if isinstance(command, list):
         result = list(command)
         for cmd in command:
-            # تأكد ان cmd هو string
             if isinstance(cmd, str) and cmd in ARABIC_COMMANDS:
                 result.extend(ARABIC_COMMANDS[cmd])
         return result
 
-    # احتياط - لو نوع غير متوقع
     return [str(command)]
 
 
@@ -286,12 +287,10 @@ class KigyoTelegramHandler:
             filters = ~Filters.update.edited_message
 
         def _command(func):
-            # ✅ إضافة الأوامر العربية تلقائياً
             try:
                 enhanced_command = get_arabic_aliases(command)
             except Exception as e:
-                log.warning(f"[ARABIC] Error enhancing command {command}: {e}")
-                # لو حصل خطأ، استخدم الأمر الأصلي
+                log.warning(f"[عربي] خطأ في تحسين الأمر {command}: {e}")
                 if isinstance(command, (list, tuple)):
                     enhanced_command = list(command)
                 elif isinstance(command, str):
@@ -311,7 +310,7 @@ class KigyoTelegramHandler:
                                        pass_args=pass_args), group
                     )
                 log.debug(
-                    f"[KIGCMD] Loaded handler {enhanced_command} for function {func.__name__} in group {group}")
+                    f"[KIGCMD] تم تحميل {enhanced_command} للدالة {func.__name__} في المجموعة {group}")
             except TypeError:
                 try:
                     if can_disable:
@@ -325,10 +324,9 @@ class KigyoTelegramHandler:
                             CommandHandler(enhanced_command, func, filters=filters, run_async=run_async,
                                            pass_args=pass_args, pass_chat_data=pass_chat_data)
                         )
-                    log.debug(f"[KIGCMD] Loaded handler {enhanced_command} for function {func.__name__}")
+                    log.debug(f"[KIGCMD] تم تحميل {enhanced_command} للدالة {func.__name__}")
                 except Exception as e:
-                    log.error(f"[KIGCMD] Failed to load handler {command}: {e}")
-                    # محاولة اخيرة بالأمر الأصلي بدون عربي
+                    log.error(f"[KIGCMD] فشل تحميل {command}: {e}")
                     try:
                         if isinstance(command, tuple):
                             orig = list(command)
@@ -347,9 +345,9 @@ class KigyoTelegramHandler:
                                 CommandHandler(orig, func, filters=filters, run_async=run_async,
                                                pass_args=pass_args), group
                             )
-                        log.debug(f"[KIGCMD] Loaded handler {orig} (fallback) for function {func.__name__}")
+                        log.debug(f"[KIGCMD] تم تحميل {orig} (احتياطي) للدالة {func.__name__}")
                     except:
-                        log.error(f"[KIGCMD] Completely failed to load handler for {func.__name__}")
+                        log.error(f"[KIGCMD] فشل كامل في تحميل الدالة {func.__name__}")
 
             return func
 
@@ -373,7 +371,7 @@ class KigyoTelegramHandler:
                         MessageHandler(pattern, func, run_async=run_async), group
                     )
                 log.debug(
-                    f"[KIGMSG] Loaded filter pattern {pattern} for function {func.__name__} in group {group}")
+                    f"[KIGMSG] تم تحميل الفلتر {pattern} للدالة {func.__name__} في المجموعة {group}")
             except TypeError:
                 try:
                     if can_disable:
@@ -384,9 +382,9 @@ class KigyoTelegramHandler:
                         self._dispatcher.add_handler(
                             MessageHandler(pattern, func, run_async=run_async)
                         )
-                    log.debug(f"[KIGMSG] Loaded filter pattern {pattern} for function {func.__name__}")
+                    log.debug(f"[KIGMSG] تم تحميل الفلتر {pattern} للدالة {func.__name__}")
                 except Exception as e:
-                    log.error(f"[KIGMSG] Failed to load message handler: {e}")
+                    log.error(f"[KIGMSG] فشل تحميل message handler: {e}")
 
             return func
 
@@ -397,7 +395,7 @@ class KigyoTelegramHandler:
             self._dispatcher.add_handler(
                 CallbackQueryHandler(pattern=pattern, callback=func, run_async=run_async))
             log.debug(
-                f'[KIGCALLBACK] Loaded callbackquery handler with pattern {pattern} for function {func.__name__}')
+                f'[KIGCALLBACK] تم تحميل callback بالنمط {pattern} للدالة {func.__name__}')
             return func
 
         return _callbackquery
@@ -410,8 +408,7 @@ class KigyoTelegramHandler:
                                    pass_user_data=pass_user_data,
                                    pass_chat_data=pass_chat_data, chat_types=chat_types))
             log.debug(
-                f'[KIGINLINE] Loaded inlinequery handler with pattern {pattern} for function {func.__name__} | PASSES '
-                f'USER DATA: {pass_user_data} | PASSES CHAT DATA: {pass_chat_data} | CHAT TYPES: {chat_types}')
+                f'[KIGINLINE] تم تحميل inline بالنمط {pattern} للدالة {func.__name__}')
             return func
 
         return _inlinequery
@@ -467,7 +464,7 @@ def register(**args):
             if SpamChecker.check_user(user_id):
                 return
             if groups_only and not check.is_group:
-                await check.respond("هذا الامر يشتغل في القروبات فقط")
+                await check.respond("⚠️ هذا الأمر يشتغل في القروبات فقط!")
                 return
             try:
                 await func(check)
@@ -484,18 +481,18 @@ def register(**args):
                     )
                     tb = "".join(tb_list)
                     pretty_message = (
-                        "An exception was raised while handling an update\n"
-                        "User: {}\n"
-                        "Chat: {} {}\n"
-                        "Callback data: {}\n"
-                        "Message: {}\n\n"
-                        "Full Traceback: {}"
+                        "حصل خطأ وقت معالجة التحديث\n"
+                        "المستخدم: {}\n"
+                        "المحادثة: {} {}\n"
+                        "بيانات الكولباك: {}\n"
+                        "الرسالة: {}\n\n"
+                        "التفاصيل الكاملة: {}"
                     ).format(
-                        check.from_id or "None",
+                        check.from_id or "ما فيش",
                         getattr(check.chat, 'title', '') or "",
                         check.chat_id or "",
-                        getattr(check, 'callback_query', None) or "None",
-                        getattr(check.text, 'text', check.text) or "No message",
+                        getattr(check, 'callback_query', None) or "ما فيش",
+                        getattr(check.text, 'text', check.text) or "ما فيش رسالة",
                         tb,
                     )
 
@@ -508,7 +505,7 @@ def register(**args):
                         await check.client.send_file(
                             OWNER_ID,
                             open("error.txt", "rb"),
-                            caption=f"<b>حصل خطا:</b>\n<code>{e}</code>",
+                            caption=f"<b>❌ حصل خطأ:</b>\n<code>{e}</code>",
                             parse_mode="html",
                         )
                         return
@@ -516,16 +513,16 @@ def register(**args):
                     url = f"https://nekobin.com/{key}.py"
                     await check.client.send_message(
                         OWNER_ID,
-                        f"<b>حصل خطا:</b>\n<code>{e}</code>\n\n<a href='{url}'>التفاصيل</a>",
+                        f"<b>❌ حصل خطأ:</b>\n<code>{e}</code>\n\n<a href='{url}'>📋 التفاصيل</a>",
                         parse_mode="html",
                     )
                 except Exception:
-                    log.error("Error in error handler", exc_info=True)
+                    log.error("خطأ في معالج الأخطاء", exc_info=True)
 
         if not disable_edited:
             telethn.add_event_handler(wrapper, events.MessageEdited(**args))
         telethn.add_event_handler(wrapper, events.NewMessage(**args))
-        log.debug(f"[TLTHNCMD] Loaded handler {pattern} for function {func.__name__}")
+        log.debug(f"[TLTHNCMD] تم تحميل {pattern} للدالة {func.__name__}")
 
         return wrapper
 
