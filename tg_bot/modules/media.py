@@ -1,17 +1,16 @@
-
 __help__ = """
-*Available commands:*\n
-*Movie information:*
- • `/imdb <movie name>`: does a movie search in Imdb site\n
-*Lyrics:*
- • `/lyrics <song name>`: does a lyric search for a given song name\n
-*Image reverse:*
- • `/reverse`: does a *reverse image search* of the media which it was replied to\n
-*Text to speech:*
- • `/tts <text>`: convert text to speech\n
-*Youtube:*
- • `/youtube`, `/yt` `<song or video name>`: download songs or videos from youtube in standar quality
+*الأوامر المتاحة:*\n
+*معلومات الأفلام:*
+ • `/imdb <اسم الفيلم>`: يبحثلك على فيلم في موقع IMDB\n
+*كلمات الأغاني:*
+ • `/lyrics <اسم الأغنية>`: يبحثلك على كلمات أغنية معينة\n
+*البحث العكسي عن الصور:*
+ • `/reverse`: يسوي *بحث عكسي عن الصورة* اللي رديت عليها\n
+*تحويل النص لصوت:*
+ • `/tts <النص>`: يحول النص اللي كتبته لمقطع صوتي\n
+*يوتيوب:*
+ • `/youtube`، `/yt` `<اسم الأغنية أو الفيديو>`: ينزلك أغاني أو فيديوهات من يوتيوب بجودة عادية
 """
 
-__mod_name__ = "Media"
+__mod_name__ = "🎬 الوسائط"
 __command_list__ = ["reverse", "tts", "song", "video"]
