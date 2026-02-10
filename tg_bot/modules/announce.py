@@ -28,34 +28,34 @@ def announcestat(update: Update, context: CallbackContext) -> str:
         if args[0].lower() in ["on", "yes", "true"]:
             sql.enable_chat_log(update.effective_chat.id)
             update.effective_message.reply_text(
-                "I've enabled announcements in this group. Now any admin actions in your group will be announced."
+                "✅ فعّلت الإعلانات فهالقروب. توا أي إجراء يسويه أدمن فالقروب بيتم الإعلان عنه."
             )
             logmsg = (
                 f"<b>{html.escape(chat.title)}:</b>\n"
-                f"#ANNOUNCE_TOGGLED\n"
-                f"Admin actions announcement has been <b>enabled</b>\n"
-                f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n "
+                f"#تبديل_الإعلانات\n"
+                f"إعلانات إجراءات المشرفين تم <b>تفعيلها</b>\n"
+                f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n "
             )
             return logmsg
 
         elif args[0].lower() in ["off", "no", "false"]:
             sql.disable_chat_log(update.effective_chat.id)
             update.effective_message.reply_text(
-                "I've disabled announcements in this group. Now admin actions in your group will not be announced."
+                "❌ عطّلت الإعلانات فهالقروب. توا إجراءات المشرفين فالقروب مش بتتعلن."
             )
             logmsg = (
                 f"<b>{html.escape(chat.title)}:</b>\n"
-                f"#ANNOUNCE_TOGGLED\n"
-                f"Admin actions announcement has been <b>disabled</b>\n"
-                f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n "
+                f"#تبديل_الإعلانات\n"
+                f"إعلانات إجراءات المشرفين تم <b>تعطيلها</b>\n"
+                f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n "
             )
             return logmsg
     else:
         update.effective_message.reply_text(
-            "Give me some arguments to choose a setting! on/off, yes/no!\n\n"
-            "Your current setting is: {}\n"
-            "When True, any admin actions in your group will be announced."
-            "When False, admin actions in your group will not be announced.".format(
+            "⚙️ عطيني خيار باش نغير الإعداد! on/off أو yes/no!\n\n"
+            "الإعداد الحالي: {}\n\n"
+            "✅ لما يكون True، أي إجراء يسويه أدمن فالقروب بيتم الإعلان عنه.\n"
+            "❌ لما يكون False، إجراءات المشرفين مش بتتعلن.".format(
                 sql.does_chat_log(update.effective_chat.id))
         )
         return ''
