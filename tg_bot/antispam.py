@@ -54,7 +54,6 @@ def antispam_cek_user(user_id, time):
 		if value['restrict']:
 			if int(time) >= int(value['restrict']):
 				if value['status']:
-					# value['value'] = 0
 					value['status'] = False
 					value['level'] += 1
 					value['restrict'] = 0
@@ -84,11 +83,8 @@ def antispam_cek_user(user_id, time):
 						restrict_time = None
 						number += 1
 				else:
-					# dispatcher.bot.sendMessage(Owner, "⚠ Alert: user `{}` was detected spam.".format(user_id),
-					#                            parse_mode = "markdown")
 					GLOBAL_USER_DATA["AntiSpamHard"] = {
 						user_id: {"status": False, "user": user_id, "value": 0, "restrict": restime, "level": level}}
-					# print(GLOBAL_USER_DATA["AntiSpamHard"])
 					return value
 				GLOBAL_USER_DATA["AntiSpamHard"] = {
 					user_id: {"status": status, "user": user_id, "value": number, "restrict": restrict_time,
@@ -112,8 +108,7 @@ def check_user_spam(user_id):
 	return {"status": status, "status_hard": status_hard}
 
 
-# This is will detect user
-# todo: increasing increments for ignores
+# هذا يكشف المستخدم اللي يسوي سبام
 def detect_user(user_id, chat_id, message, parsing_date):
 	check_spam = antispam_cek_user(user_id, parsing_date)
 	check_user = check_user_spam(user_id)
@@ -132,27 +127,27 @@ def detect_user(user_id, chat_id, message, parsing_date):
 								dispatcher.bot.ban_chat_member(chat_id, user_id)
 							dispatcher.bot.sendMessage(
 									chat_id,
-									"This user was spamming the chat, so I banned him!",
-									reply_to_message_id = message.message_id)
+									"⛔ هذا المستخدم كان يسوي سبام فالقروب، عشان كذا حظرته!",
+									reply_to_message_id=message.message_id)
 							dispatcher.bot.sendMessage(
 									Owner,
-									"I've banned this user!\n ID: `{}`\nChat: `{}`".format(
-											user_id, chat_id), parse_mode = "markdown")
+									"✅ حظرت هذا المستخدم!\n🆔 الآيدي: `{}`\n💬 القروب: `{}`".format(
+											user_id, chat_id), parse_mode="markdown")
 							return True
 						except Exception as e:
 							dispatcher.bot.sendMessage(
 									Owner,
-									"Error banning user!\n ID: `{}`\nChat: `{}`\n\n{}".format(
-											user_id, chat_id, e), parse_mode = "markdown")
-							ERRORS.append((user_id, chat_id))  # don't spam that it failed
+									"❌ ما قدرت نحظر المستخدم!\n🆔 الآيدي: `{}`\n💬 القروب: `{}`\n\n{}".format(
+											user_id, chat_id, e), parse_mode="markdown")
+							ERRORS.append((user_id, chat_id))
 							pass
 				elif message.chat.type != 'private':
 
 					if chat_id not in IGNORED_CHATS:
 						dispatcher.bot.sendMessage(
 								Owner,
-								"A chat is getting spammed and is now ignored \n`{}`  \n`{}`".format(chat_id, user_id),
-								parse_mode = "markdown")
+								"⚠️ في قروب يتسبم فيه وتوا نتجاهله\n💬 القروب: `{}`\n🆔 المستخدم: `{}`".format(chat_id, user_id),
+								parse_mode="markdown")
 						IGNORED_CHATS.append(chat_id)
 
 						def unignore_chat(_):
@@ -163,14 +158,14 @@ def detect_user(user_id, chat_id, message, parsing_date):
 				else:
 					dispatcher.bot.sendMessage(
 							Owner,
-							"I am getting spammed by \n `{}` ".format(user_id),
-							parse_mode = "markdown")
+							"⚠️ في واحد يسبمني فالخاص\n🆔 المستخدم: `{}`".format(user_id),
+							parse_mode="markdown")
 			return True
 		if user_id not in IGNORED_USERS:
 			dispatcher.bot.sendMessage(
 					Owner,
-					"A user is spamming and is now ignored \n`{}`  \n`{}`".format(chat_id, user_id),
-					parse_mode = "markdown")
+					"⚠️ في مستخدم يسوي سبام وتوا نتجاهله\n💬 القروب: `{}`\n🆔 المستخدم: `{}`".format(chat_id, user_id),
+					parse_mode="markdown")
 			IGNORED_USERS.append(user_id)
 
 			def unignore_user(_):
@@ -183,4 +178,3 @@ def detect_user(user_id, chat_id, message, parsing_date):
 		if user_id in NoResUser:
 			return False
 		return True
-
