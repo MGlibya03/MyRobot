@@ -24,6 +24,7 @@ else:
 
 
 def _ensure_string_list(command):
+    """تحول أي نوع أمر لقائمة strings"""
     result = []
     if isinstance(command, str):
         result.append(command.lower())
@@ -45,6 +46,7 @@ def _ensure_string_list(command):
 
 
 def _is_arabic(text):
+    """يتحقق إذا النص فيه حروف عربية"""
     if not text:
         return False
     for char in text:
@@ -90,17 +92,41 @@ SpamChecker = AntiSpam()
 MessageHandlerChecker = AntiSpam()
 
 
+# ═══════════════════════════════════════════════════════════
+# قائمة الأوامر العربية المسجلة - تتملى تلقائياً
+# ═══════════════════════════════════════════════════════════
+REGISTERED_ARABIC_COMMANDS = set()
+
+
 class CustomCommandHandler(tg.Handler):
     """
     معالج أوامر يدعم:
-    - حظر (بدون أي رمز)
-    - مسح (بدون أي رمز)
-    - رصيدي (بدون أي رمز)
-    - /ban (بالرمز للإنجليزي)
+    ═══════════════════════════════════════
+    ✅ الأوامر العربية بدون أي رمز:
+       كتم @user
+       حظر @user
+       طرد @user
+       معلومات
+       الايدي
+    ═══════════════════════════════════════
+    ✅ الأوامر الإنجليزية بالرمز:
+       /ban @user
+       /mute @user
+       /kick @user
+    ═══════════════════════════════════════
+    ✅ الأوامر بأي رمز:
+       !ban  >ban  /ban
+       !كتم  >كتم  /كتم
+    ═══════════════════════════════════════
     """
     def __init__(self, command, callback, run_async=True, **kwargs):
         super().__init__(callback, run_async=run_async)
         self.command = _ensure_string_list(command)
+
+        # نسجل الأوامر العربية باش نعرفها بعدين
+        for cmd in self.command:
+            if _is_arabic(cmd):
+                REGISTERED_ARABIC_COMMANDS.add(cmd)
 
         if "admin_ok" in kwargs:
             del kwargs["admin_ok"]
@@ -145,7 +171,8 @@ class CustomCommandHandler(tg.Handler):
                 cmd_name = command_text.lower()
 
         # ═══════════════════════════════════════════
-        # ثانياً: بدون أي رمز (الكلمة مباشرة)
+        # ثانياً: بدون أي رمز - بس للأوامر العربية فقط!
+        # هذا باش ما يتداخلش مع الكلام العادي
         # ═══════════════════════════════════════════
         else:
             word = fst_word
@@ -157,6 +184,16 @@ class CustomCommandHandler(tg.Handler):
                     return None
             else:
                 cmd_name = word.lower()
+
+            # ⚠️ مهم: بدون رمز نقبل بس الأوامر العربية المسجلة
+            # باش لو واحد كتب "ban" عادي ما يتنفذش
+            if cmd_name and not _is_arabic(cmd_name):
+                return None
+
+            # ⚠️ نتأكد إن الكلمة العربية هي فعلاً أمر مسجل
+            # باش لو واحد كتب كلمة عربية عادية ما يتنفذش شي
+            if cmd_name and cmd_name not in REGISTERED_ARABIC_COMMANDS:
+                return None
 
         # ═══════════════════════════════════════════
         # نتحقق اذا الأمر مسجل
@@ -178,6 +215,7 @@ class CustomCommandHandler(tg.Handler):
 
 
 class CustomMessageHandler(MessageHandler):
+    """معالج رسائل مخصص مع فحص السبام"""
     def __init__(self, pattern, callback, run_async=True, friendly="", **kwargs):
         super().__init__(pattern, callback, run_async=run_async, **kwargs)
         self.friendly = friendly or pattern
