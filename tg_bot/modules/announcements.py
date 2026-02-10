@@ -18,24 +18,21 @@ from tg_bot.modules.log_channel import loggable
 import tg_bot.modules.sql.logger_sql as sql
 
 
-# Module to extract and log (optional: send to chat) status changes in chat members using ChatMemberUpdated
-# https://github.com/python-telegram-bot/python-telegram-bot/blob/master/examples/chatmemberbot.py
-
 def extract_status_change(chat_member_update: ChatMemberUpdated):
     try:
         status_change = chat_member_update.difference().get("status")
-    except AttributeError:  # no change in status
+    except AttributeError:
         status_change = None
 
     try:
         title_change = chat_member_update.difference().get("custom_title")
-    except AttributeError:  # no change in title
+    except AttributeError:
         title_change = None
 
     return status_change, title_change
 
 
-def do_announce(chat):  # announce to chat or only to log channel?
+def do_announce(chat):
     return bool(chat.type != "channel" and sql.does_chat_log(chat.id))
 
 
@@ -52,73 +49,72 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
     result = extract_status_change(update.chat_member)
     status_change, title_change = result
 
-    if title_change is not None and status_change is None:  # extract title changes for admins
+    if title_change is not None and status_change is None:
         oldtitle, newtitle = title_change
         cause_name = update.chat_member.from_user.mention_html()
         member_name = update.chat_member.new_chat_member.user.mention_html()
         if oldtitle != newtitle:
 
-            if str(update.chat_member.from_user.id) == str(bot.id):  # bot action
-                return ''  # we handle these in their respective modules
+            if str(update.chat_member.from_user.id) == str(bot.id):
+                return ''
             else:
 
                 if oldtitle is None:
                     if do_announce(chat):
                         update.effective_chat.send_message(
-                            f"{member_name}'s title was set by {cause_name}.\nold title: {oldtitle}\nnew title: '<code>{newtitle}</code>'",
+                            f"📝 {cause_name} حط لقب لـ {member_name}.\nاللقب الجديد: '<code>{newtitle}</code>'",
                             parse_mode=ParseMode.HTML,
                         )
                     log_message = (
                         f"<b>{html.escape(chat.title)}:</b>\n"
-                        f"#ADMIN\nTitle set\n"
-                        f"<b>By Admin:</b> {cause_name}\n"
-                        f"<b>To Admin:</b> {member_name}\n"
-                        f"<b>Old Title:</b> {oldtitle}\n"
-                        f"<b>New Title:</b> '<code>{newtitle}</code>'"
+                        f"#أدمن\nتم تعيين لقب\n"
+                        f"<b>من طرف:</b> {cause_name}\n"
+                        f"<b>للمشرف:</b> {member_name}\n"
+                        f"<b>اللقب القديم:</b> {oldtitle}\n"
+                        f"<b>اللقب الجديد:</b> '<code>{newtitle}</code>'"
                     )
                     return log_message
 
                 elif newtitle is None:
                     if do_announce(chat):
                         update.effective_chat.send_message(
-                            f"{member_name}'s title was removed by {cause_name}.\nold title: '<code>{oldtitle}</code"
-                            f">'\nnew title: {newtitle}",
+                            f"📝 {cause_name} شال اللقب متاع {member_name}.\nاللقب القديم: '<code>{oldtitle}</code>'",
                             parse_mode=ParseMode.HTML,
                         )
                     log_message = (
                         f"<b>{html.escape(chat.title)}:</b>\n"
-                        f"#ADMIN\nTitle removed\n"
-                        f"<b>By Admin:</b> {cause_name}\n"
-                        f"<b>To Admin:</b> {member_name}\n"
-                        f"<b>Old Title:</b> '<code>{oldtitle}</code>'\n"
-                        f"<b>New Title:</b> {newtitle}"
+                        f"#أدمن\nتم إزالة اللقب\n"
+                        f"<b>من طرف:</b> {cause_name}\n"
+                        f"<b>للمشرف:</b> {member_name}\n"
+                        f"<b>اللقب القديم:</b> '<code>{oldtitle}</code>'\n"
+                        f"<b>اللقب الجديد:</b> {newtitle}"
                     )
                     return log_message
 
                 else:
                     if do_announce(chat):
                         update.effective_chat.send_message(
-                            f"{member_name}'s title was changed by {cause_name}.\nold title: '<code>{oldtitle}</code"
-                            f">'\nnew title: '<code>{newtitle}</code>'",
+                            f"📝 {cause_name} غيّر لقب {member_name}.\nاللقب القديم: '<code>{oldtitle}</code"
+                            f">'\nاللقب الجديد: '<code>{newtitle}</code>'",
                             parse_mode=ParseMode.HTML,
                         )
                     log_message = (
                         f"<b>{html.escape(chat.title)}:</b>\n"
-                        f"#ADMIN\nTitle changed\n"
-                        f"<b>By Admin:</b> {cause_name}\n"
-                        f"<b>To Admin:</b> {member_name}\n"
-                        f"<b>Old Title:</b> '<code>{oldtitle}</code>'\n"
-                        f"<b>New Title:</b> '<code>{newtitle}</code>'"
+                        f"#أدمن\nتم تغيير اللقب\n"
+                        f"<b>من طرف:</b> {cause_name}\n"
+                        f"<b>للمشرف:</b> {member_name}\n"
+                        f"<b>اللقب القديم:</b> '<code>{oldtitle}</code>'\n"
+                        f"<b>اللقب الجديد:</b> '<code>{newtitle}</code>'"
                     )
                     return log_message
 
-    if status_change is not None:  # exctract chat changes
+    if status_change is not None:
         status = ','.join(status_change)
         oldstat = str(status.split(",")[0])
         newstat = str(status.split(",")[1])
 
         if str(update.chat_member.from_user.id) == str(bot.id):
-            return ''  # we handle these in their respective modules same as before
+            return ''
         else:
 
             cause_name = update.chat_member.from_user.mention_html()
@@ -127,7 +123,7 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
             if oldstat == "administrator" and newstat == "member":
                 if do_announce(chat):
                     update.effective_chat.send_message(
-                        f"{member_name} was demoted by {cause_name}.",
+                        f"⬇️ {member_name} تم تنزيله من الإدارة من طرف {cause_name}.",
                         parse_mode=ParseMode.HTML,
                     )
 
@@ -136,16 +132,16 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
                 log_message = (
                     f"<b>{html.escape(chat.title)}:</b>\n"
-                    f"#ADMIN\n<b>Demoted</b>\n"
-                    f"<b>Admin:</b> {cause_name}\n"
-                    f"<b>User:</b> {member_name}"
+                    f"#أدمن\n<b>تم التنزيل من الإدارة</b>\n"
+                    f"<b>المشرف:</b> {cause_name}\n"
+                    f"<b>المستخدم:</b> {member_name}"
                 )
                 return log_message
 
             if oldstat == "administrator" and newstat == "kicked":
                 if do_announce(chat):
                     update.effective_chat.send_message(
-                        f"{member_name} was demoted and removed by {cause_name}.",
+                        f"⬇️⛔ {member_name} تم تنزيله وطرده من طرف {cause_name}.",
                         parse_mode=ParseMode.HTML,
                     )
 
@@ -154,10 +150,10 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
                 log_message = (
                     f"<b>{html.escape(chat.title)}:</b>\n"
-                    f"#BANNED\n"
-                    f"#ADMIN\n<b>Demoted</b>\n"
-                    f"<b>Admin:</b> {cause_name}\n"
-                    f"<b>User:</b> {member_name}"
+                    f"#حظر\n"
+                    f"#أدمن\n<b>تم التنزيل والحظر</b>\n"
+                    f"<b>المشرف:</b> {cause_name}\n"
+                    f"<b>المستخدم:</b> {member_name}"
                 )
                 return log_message
 
@@ -168,9 +164,9 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
                 log_message = (
                     f"<b>{html.escape(chat.title)}:</b>\n"
-                    f"#ADMIN\n<b>Left</b>\n"
-                    f"<b>Admin:</b> {cause_name}\n"
-                    f"<b>User:</b> {member_name}"
+                    f"#أدمن\n<b>طلع من القروب</b>\n"
+                    f"<b>المشرف:</b> {cause_name}\n"
+                    f"<b>المستخدم:</b> {member_name}"
                 )
                 return log_message
 
@@ -180,7 +176,7 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
                     if oldtitle != newtitle:
                         if do_announce(chat):
                             update.effective_chat.send_message(
-                                f"{member_name} was promoted by {cause_name} with the title <code>{newtitle}</code>.",
+                                f"⬆️ {member_name} تمت ترقيته من طرف {cause_name} باللقب <code>{newtitle}</code>.",
                                 parse_mode=ParseMode.HTML,
                             )
 
@@ -189,17 +185,17 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
                         log_message = (
                             f"<b>{html.escape(chat.title)}:</b>\n"
-                            f"#ADMIN\n<b>Promoted</b>\n"
-                            f"<b>Admin:</b> {cause_name}\n"
-                            f"<b>User:</b> {member_name}\n"
-                            f"<b>Title:</b> '<code>{newtitle}</code>'"
+                            f"#أدمن\n<b>تمت الترقية</b>\n"
+                            f"<b>المشرف:</b> {cause_name}\n"
+                            f"<b>المستخدم:</b> {member_name}\n"
+                            f"<b>اللقب:</b> '<code>{newtitle}</code>'"
                         )
                         return log_message
 
                 else:
                     if do_announce(chat):
                         update.effective_chat.send_message(
-                            f"{member_name} was promoted by {cause_name}.",
+                            f"⬆️ {member_name} تمت ترقيته من طرف {cause_name}.",
                             parse_mode=ParseMode.HTML,
                         )
 
@@ -208,16 +204,16 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
                     log_message = (
                         f"<b>{html.escape(chat.title)}:</b>\n"
-                        f"#ADMIN\n<b>Promoted</b>\n"
-                        f"<b>Admin:</b> {cause_name}\n"
-                        f"<b>User:</b> {member_name}"
+                        f"#أدمن\n<b>تمت الترقية</b>\n"
+                        f"<b>المشرف:</b> {cause_name}\n"
+                        f"<b>المستخدم:</b> {member_name}"
                     )
                     return log_message
 
             if oldstat != "restricted" and newstat == "restricted":
                 if do_announce(chat):
                     update.effective_chat.send_message(
-                        f"{member_name} was muted by {cause_name}.",
+                        f"🔇 {member_name} تم كتمه من طرف {cause_name}.",
                         parse_mode=ParseMode.HTML,
                     )
 
@@ -226,16 +222,16 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
                 log_message = (
                     f"<b>{html.escape(chat.title)}:</b>\n"
-                    f"#MUTED\n"
-                    f"<b>Admin:</b> {cause_name}\n"
-                    f"<b>User:</b> {member_name}"
+                    f"#كتم\n"
+                    f"<b>المشرف:</b> {cause_name}\n"
+                    f"<b>المستخدم:</b> {member_name}"
                 )
                 return log_message
 
             if oldstat == "restricted" and newstat != "restricted":
                 if do_announce(chat):
                     update.effective_chat.send_message(
-                        f"{member_name} was unmuted by {cause_name}.",
+                        f"🔊 {member_name} تم فك كتمه من طرف {cause_name}.",
                         parse_mode=ParseMode.HTML,
                     )
 
@@ -244,9 +240,9 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
                 log_message = (
                     f"<b>{html.escape(chat.title)}:</b>\n"
-                    f"#UNMUTED\n"
-                    f"<b>Admin:</b> {cause_name}\n"
-                    f"<b>User:</b> {member_name}"
+                    f"#فك_كتم\n"
+                    f"<b>المشرف:</b> {cause_name}\n"
+                    f"<b>المستخدم:</b> {member_name}"
                 )
                 return log_message
 
@@ -258,7 +254,7 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
         if oldstat != "kicked" and newstat == "kicked":
             if do_announce(chat):
                 update.effective_chat.send_message(
-                    f"{member_name} was banned by {cause_name}.",
+                    f"⛔ {member_name} تم حظره من طرف {cause_name}.",
                     parse_mode=ParseMode.HTML,
                 )
 
@@ -267,16 +263,16 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
             log_message = (
                 f"<b>{html.escape(chat.title)}:</b>\n"
-                f"#BANNED\n"
-                f"<b>Admin:</b> {cause_name}\n"
-                f"<b>User:</b> {member_name}"
+                f"#حظر\n"
+                f"<b>المشرف:</b> {cause_name}\n"
+                f"<b>المستخدم:</b> {member_name}"
             )
             return log_message
 
         if oldstat == "kicked" and newstat != "kicked":
             if do_announce(chat):
                 update.effective_chat.send_message(
-                    f"{member_name} was unbanned by {cause_name}.",
+                    f"✅ {member_name} تم فك حظره من طرف {cause_name}.",
                     parse_mode=ParseMode.HTML,
                 )
 
@@ -285,16 +281,16 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
             log_message = (
                 f"<b>{html.escape(chat.title)}:</b>\n"
-                f"#UNBANNED\n"
-                f"<b>Admin:</b> {cause_name}\n"
-                f"<b>User:</b> {member_name}"
+                f"#فك_حظر\n"
+                f"<b>المشرف:</b> {cause_name}\n"
+                f"<b>المستخدم:</b> {member_name}"
             )
             return log_message
 
         if oldstat == "kicked" and newstat == "member":
             if do_announce(chat):
                 update.effective_chat.send_message(
-                    f"{member_name} was unbanned and added by {cause_name}.",
+                    f"✅ {member_name} تم فك حظره وإضافته من طرف {cause_name}.",
                     parse_mode=ParseMode.HTML,
                 )
 
@@ -303,10 +299,10 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
             log_message = (
                 f"<b>{html.escape(chat.title)}:</b>\n"
-                f"#UNBANNED\n"
-                f"#WELCOME\n"
-                f"<b>Admin:</b> {cause_name}\n"
-                f"<b>User:</b> {member_name}"
+                f"#فك_حظر\n"
+                f"#ترحيب\n"
+                f"<b>المشرف:</b> {cause_name}\n"
+                f"<b>المستخدم:</b> {member_name}"
             )
             return log_message
 
@@ -318,9 +314,9 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
                 log_message = (
                     f"<b>{html.escape(chat.title)}:</b>\n"
-                    f"#WELCOME\n"
-                    f"<b>User:</b> {member_name}\n"
-                    f"<b>ID</b>: <code>{update.chat_member.new_chat_member.user.id}</code>"
+                    f"#ترحيب\n"
+                    f"<b>المستخدم:</b> {member_name}\n"
+                    f"<b>الآيدي</b>: <code>{update.chat_member.new_chat_member.user.id}</code>"
                 )
                 return log_message
 
@@ -330,10 +326,10 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
                 log_message = (
                     f"<b>{html.escape(chat.title)}:</b>\n"
-                    f"#WELCOME\n"
-                    f"<b>User:</b> {member_name}\n"
-                    f"<b>Added by:</b> {cause_name}\n"
-                    f"<b>ID</b>: <code>{update.chat_member.new_chat_member.user.id}</code>"
+                    f"#ترحيب\n"
+                    f"<b>المستخدم:</b> {member_name}\n"
+                    f"<b>أضافه:</b> {cause_name}\n"
+                    f"<b>الآيدي</b>: <code>{update.chat_member.new_chat_member.user.id}</code>"
                 )
                 return log_message
 
@@ -345,9 +341,9 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
                 log_message = (
                     f"<b>{html.escape(chat.title)}:</b>\n"
-                    f"#GOODBYE\n"
-                    f"<b>User:</b> {member_name}\n"
-                    f"<b>ID</b>: <code>{update.chat_member.new_chat_member.user.id}</code>"
+                    f"#وداعاً\n"
+                    f"<b>المستخدم:</b> {member_name}\n"
+                    f"<b>الآيدي</b>: <code>{update.chat_member.new_chat_member.user.id}</code>"
                 )
                 return log_message
 
@@ -358,10 +354,10 @@ def chatmemberupdates(update: Update, context: CallbackContext) -> Optional[str]
 
                 log_message = (
                     f"<b>{html.escape(chat.title)}:</b>\n"
-                    f"#REMOVED\n"
-                    f"<b>User:</b> {member_name}\n"
-                    f"<b>Removed by:</b> {cause_name}\n"
-                    f"<b>ID</b>: <code>{update.chat_member.new_chat_member.user.id}</code>"
+                    f"#إزالة\n"
+                    f"<b>المستخدم:</b> {member_name}\n"
+                    f"<b>أزاله:</b> {cause_name}\n"
+                    f"<b>الآيدي</b>: <code>{update.chat_member.new_chat_member.user.id}</code>"
                 )
                 return log_message
 
@@ -369,8 +365,8 @@ def mychatmemberupdates(update: Update, _: CallbackContext):
     result = extract_status_change(update.my_chat_member)
     status_change, _1 = result
     chat = update.effective_chat
-    chatname = chat.title or chat.first_name or 'None'
-    cause_name = update.effective_user.mention_html() if update.effective_user else "Unknown"
+    chatname = chat.title or chat.first_name or 'ما فيش'
+    cause_name = update.effective_user.mention_html() if update.effective_user else "مجهول"
     if status_change is not None:
         status = ','.join(status_change)
         oldstat = str(status.split(",")[0])
@@ -378,11 +374,11 @@ def mychatmemberupdates(update: Update, _: CallbackContext):
         if oldstat == ("left" or "kicked") and newstat == ("member" or "administrator"):
             new_group = (
                 f"<b>{html.escape(chat.title) or chat.first_name or chat.id}:</b>\n"
-                f"#NEW_CHAT\n"
-                f"<b>Chat:</b> {chatname}\n"
-                f"<b>Added by:</b> {cause_name or 'none'}\n"
-                f"<b>ID</b>: <code>{update.effective_user.id}</code>\n"
-                f"<b>Chat ID</b>: <code>{update.effective_chat.id}</code>"
+                f"#قروب_جديد\n"
+                f"<b>القروب:</b> {chatname}\n"
+                f"<b>أضافني:</b> {cause_name or 'ما فيش'}\n"
+                f"<b>الآيدي</b>: <code>{update.effective_user.id}</code>\n"
+                f"<b>آيدي القروب</b>: <code>{update.effective_chat.id}</code>"
             )
             dispatcher.bot.send_message(OWNER_ID, new_group, parse_mode=ParseMode.HTML)
 
@@ -400,7 +396,6 @@ def admincacheupdates(update: Update, _: CallbackContext):
     ):
 
         A_CACHE[update.effective_chat.id] = update.effective_chat.get_administrators()
-        # B_CACHE[update.effective_chat.id] = update.effective_chat.get_member(dispatcher.bot.id)
 
 
 def botstatchanged(update: Update, _: CallbackContext):
