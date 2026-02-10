@@ -17,7 +17,7 @@ from ..modules.sql.antichannel_sql import antichannel_status, disable_antichanne
 @kigcmd(command="antichannel", group=100)
 @connection_status
 @bot_admin_check(AdminPerms.CAN_RESTRICT_MEMBERS)
-@user_admin_check(AdminPerms.CAN_CHANGE_INFO, allow_mods = True)
+@user_admin_check(AdminPerms.CAN_CHANGE_INFO, allow_mods=True)
 @loggable
 def set_antichannel(update: Update, context: CallbackContext) -> Optional[str]:
     message = update.effective_message
@@ -30,30 +30,33 @@ def set_antichannel(update: Update, context: CallbackContext) -> Optional[str]:
 
         if s in ["yes", "on", "true"]:
             enable_antichannel(chat.id)
-            message.reply_html("Enabled antichannel in {}".format(html.escape(chat.title)))
+            message.reply_html("✅ تم تفعيل مكافحة القنوات في {}".format(html.escape(chat.title)))
             log_message = (
-                f"#ANTICHANNEL\n"
-                f"Enabled\n"
-                f"<b>Admin:</b> {mention_html(user.id, user.first_name)}"
+                f"#مكافحة_القنوات\n"
+                f"✅ تم التفعيل\n"
+                f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}"
             )
             return log_message
 
         elif s in ["off", "no", "false"]:
             disable_antichannel(chat.id)
-            message.reply_html("Disabled antichannel in {}".format(html.escape(chat.title)))
+            message.reply_html("❌ تم تعطيل مكافحة القنوات في {}".format(html.escape(chat.title)))
             log_message = (
-                f"#ANTICHANNEL\n"
-                f"Disabled\n"
-                f"<b>Admin:</b> {mention_html(user.id, user.first_name)}"
+                f"#مكافحة_القنوات\n"
+                f"❌ تم التعطيل\n"
+                f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}"
             )
             return log_message
 
         else:
-            message.reply_text("Unrecognized arguments {}".format(s))
+            message.reply_text("🤔 ما فهمتش الخيار اللي كتبته: {}".format(s))
             return
 
     message.reply_html(
-        "Antichannel setting is currently {} in {}".format(antichannel_status(chat.id), html.escape(chat.title)))
+        "⚙️ إعداد مكافحة القنوات حالياً {} في {}".format(
+            "✅ مفعّل" if antichannel_status(chat.id) else "❌ معطّل",
+            html.escape(chat.title)
+        ))
     return
 
 
@@ -65,7 +68,7 @@ def eliminate_channel(update: Update, context: CallbackContext):
     if not antichannel_status(chat.id):
         return
 
-    # ignore approved users
+    # تجاهل المستخدمين المعتمدين
     if is_approved(chat.id, message.sender_chat.id):
         return
 
@@ -76,4 +79,4 @@ def eliminate_channel(update: Update, context: CallbackContext):
     except TelegramError:
         if not bot_is_admin(chat, AdminPerms.CAN_RESTRICT_MEMBERS):
             disable_antichannel(chat.id)
-            message.reply_text("I can't restrict users here, so I disabled antichannel for now.")
+            message.reply_text("❌ ما نقدرش نقيّد المستخدمين هنا، عشان كذا عطّلت مكافحة القنوات حالياً.")
