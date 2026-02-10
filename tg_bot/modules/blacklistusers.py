@@ -1,4 +1,4 @@
-# Module to blacklist users and prevent them from using commands by @TheRealPhoenix
+# موديول لحظر المستخدمين ومنعهم من استخدام الأوامر
 
 from telegram import ParseMode, Update
 from telegram.error import BadRequest
@@ -35,15 +35,15 @@ def bl_user(update: Update, context: CallbackContext) -> str:
     user_id, reason = extract_user_and_text(message, args)
 
     if not user_id:
-        message.reply_text("I doubt that's a user.")
+        message.reply_text("🤔 ما نظنش هذا مستخدم.")
         return ""
 
     if user_id == bot.id:
-        message.reply_text("How am I supposed to do my work if I am ignoring myself?")
+        message.reply_text("😅 كيف نشتغل لو نتجاهل روحي؟")
         return ""
 
     if user_id in BLACKLISTWHITELIST:
-        message.reply_text("No!\nNoticing Super Users is my job.")
+        message.reply_text("❌ لا!\nمراقبة المستخدمين المميزين هي شغلتي.")
         return ""
 
     try:
@@ -51,17 +51,17 @@ def bl_user(update: Update, context: CallbackContext) -> str:
     except BadRequest as excp:
         if excp.message != 'User not found':
             raise
-        message.reply_text("I can't seem to find this user.")
+        message.reply_text("🔍 ما قدرتش نلقى هذا المستخدم.")
         return ''
     sql.blacklist_user(user_id, reason)
-    message.reply_text("I shall ignore the existence of this user!")
+    message.reply_text("🚫 توا بنتجاهل وجود هذا المستخدم!")
     log_message = (
-        f"#BLACKLIST\n"
-        f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-        f"<b>User:</b> {mention_html(target_user.id, target_user.first_name)}"
+        f"#قائمة_سوداء\n"
+        f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+        f"<b>المستخدم:</b> {mention_html(target_user.id, target_user.first_name)}"
     )
     if reason:
-        log_message += f"\n<b>Reason:</b> {reason}"
+        log_message += f"\n<b>السبب:</b> {reason}"
 
     return log_message
 
@@ -75,18 +75,18 @@ def unbl_user(update: Update, context: CallbackContext) -> str:
     user_id = extract_user(message, args)
 
     if not user_id:
-        message.reply_text("I doubt that's a user.")
+        message.reply_text("🤔 ما نظنش هذا مستخدم.")
         return ""
 
     if user_id == bot.id:
-        message.reply_text("I always notice myself.")
+        message.reply_text("😎 أنا دايماً نلاحظ روحي.")
         return ""
 
     try:
         target_user = bot.get_chat(user_id)
     except BadRequest as excp:
         if excp.message == "User not found":
-            message.reply_text("I can't seem to find this user.")
+            message.reply_text("🔍 ما قدرتش نلقى هذا المستخدم.")
             return ""
         else:
             raise
@@ -94,17 +94,17 @@ def unbl_user(update: Update, context: CallbackContext) -> str:
     if sql.is_user_blacklisted(user_id):
 
         sql.unblacklist_user(user_id)
-        message.reply_text("*notices user*")
+        message.reply_text("✅ تم إزالته من القائمة السوداء!")
         log_message = (
-            f"#UNBLACKLIST\n"
-            f"<b>Admin:</b> {mention_html(user.id, user.first_name)}\n"
-            f"<b>User:</b> {mention_html(target_user.id, target_user.first_name)}"
+            f"#إزالة_من_القائمة_السوداء\n"
+            f"<b>المشرف:</b> {mention_html(user.id, user.first_name)}\n"
+            f"<b>المستخدم:</b> {mention_html(target_user.id, target_user.first_name)}"
         )
 
         return log_message
 
     else:
-        message.reply_text("I am not ignoring them at all though!")
+        message.reply_text("🤷 أنا أصلاً مش متجاهله!")
         return ""
 
 @kigcmd(command='ignoredlist', pass_args=True)
@@ -121,8 +121,8 @@ def bl_users(update: Update, context: CallbackContext):
         else:
             users.append(f"• {mention_html(user.id, user.first_name)}")
 
-    message = "<b>Blacklisted Users</b>\n"
-    message += "\n".join(users) if users else "Noone is being ignored as of yet."
+    message = "<b>🚫 المستخدمين المحظورين</b>\n"
+    message += "\n".join(users) if users else "ما فيش حد متجاهل حالياً."
     update.effective_message.reply_text(message, parse_mode=ParseMode.HTML)
 
 
@@ -133,7 +133,6 @@ def __user_info__(user_id):
 
     is_blacklisted = sql.is_user_blacklisted(user_id)
 
-    
     if (
         user_id
         in [777000, 1087968824, dispatcher.bot.id]
@@ -144,14 +143,14 @@ def __user_info__(user_id):
     ):
         return ""
     if is_blacklisted:
-        text = "\nㅤBlacklisted: <b>{}</b>"
-        text = text.format("Yes")
+        text = "\nㅤ🚫 محظور: <b>{}</b>"
+        text = text.format("إيه")
         reason = sql.get_reason(user_id)
         if reason:
-            text += f"\nㅤReason: <code>{reason}</code>"
+            text += f"\nㅤالسبب: <code>{reason}</code>"
     else:
         text = ""
 
     return text
 
-__mod_name__ = "Blacklisting Users"
+__mod_name__ = "🚫 القائمة السوداء"
