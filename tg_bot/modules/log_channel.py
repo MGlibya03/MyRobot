@@ -31,28 +31,28 @@ if is_module_loaded(FILENAME):
 
     from tg_bot import GBAN_LOGS, log, dispatcher
     from .sql import log_channel_sql as sql
- 
+
 
     def loggable(func):
         @wraps(func)
         def log_action(update, context, *args, **kwargs):
             result = func(update, context, *args, **kwargs)
-            chat = update.effective_chat  # type: Optional[Chat]
-            message = update.effective_message  # type: Optional[Message]
+            chat = update.effective_chat
+            message = update.effective_message
 
             if result:
                 datetime_fmt = "%H:%M - %d-%m-%Y"
-                result += f"\n<b>Event Stamp</b>: <code>{datetime.utcnow().strftime(datetime_fmt)}</code>"
+                result += f"\n<b>⏰ الوقت</b>: <code>{datetime.utcnow().strftime(datetime_fmt)}</code>"
 
                 try:
                     if message.chat.type == chat.SUPERGROUP:
                         if message.chat.username:
-                            result += f'\n<b>Link:</b> <a href="https://t.me/{chat.username}/{message.message_id}">click here</a>'
+                            result += f'\n<b>🔗 الرابط:</b> <a href="https://t.me/{chat.username}/{message.message_id}">اضغط هنا</a>'
                         else:
                             cid = str(chat.id).replace("-100", '')
-                            result += f'\n<b>Link:</b> <a href="https://t.me/c/{cid}/{message.message_id}">click here</a>'
+                            result += f'\n<b>🔗 الرابط:</b> <a href="https://t.me/c/{cid}/{message.message_id}">اضغط هنا</a>'
                 except AttributeError:
-                    result += '\n<b>Link:</b> No link for manual actions.'
+                    result += '\n<b>🔗 الرابط:</b> ما فيش رابط للإجراءات اليدوية.'
                 log_chat = sql.get_chat_log_channel(chat.id)
                 if log_chat:
                     send_log(context, log_chat, chat.id, result)
@@ -66,21 +66,21 @@ if is_module_loaded(FILENAME):
         @wraps(func)
         def glog_action(update, context, *args, **kwargs):
             result = func(update, context, *args, **kwargs)
-            chat = update.effective_chat  # type: Optional[Chat]
-            message = update.effective_message  # type: Optional[Message]
+            chat = update.effective_chat
+            message = update.effective_message
 
             if result:
                 datetime_fmt = "%H:%M - %d-%m-%Y"
-                result += "\n<b>Event Stamp</b>: <code>{}</code>".format(
+                result += "\n<b>⏰ الوقت</b>: <code>{}</code>".format(
                     datetime.utcnow().strftime(datetime_fmt)
                 )
 
                 if message.chat.type == chat.SUPERGROUP:
                     if message.chat.username:
-                        result += f'\n<b>Link:</b> <a href="https://t.me/{chat.username}/{message.message_id}">click here</a>'
+                        result += f'\n<b>🔗 الرابط:</b> <a href="https://t.me/{chat.username}/{message.message_id}">اضغط هنا</a>'
                     else:
                         cid = str(chat.id).replace("-100", '')
-                        result += f'\n<b>Link:</b> <a href="https://t.me/c/{cid}/{message.message_id}">click here</a>'
+                        result += f'\n<b>🔗 الرابط:</b> <a href="https://t.me/c/{cid}/{message.message_id}">اضغط هنا</a>'
                 log_chat = GBAN_LOGS or OWNER_ID
                 if log_chat:
                     send_log(context, log_chat, chat.id, result)
@@ -104,7 +104,7 @@ if is_module_loaded(FILENAME):
         except BadRequest as excp:
             if excp.message == "Chat not found":
                 bot.send_message(
-                    orig_chat_id, "This log channel has been deleted - unsetting."
+                    orig_chat_id, "❌ قناة السجل هذي تمسحت - راح نشيل الإعداد."
                 )
                 sql.stop_chat_logging(orig_chat_id)
             else:
@@ -115,12 +115,12 @@ if is_module_loaded(FILENAME):
                 bot.send_message(
                     log_chat_id,
                     result
-                    + "\n\nFormatting has been disabled due to an unexpected error.",
+                    + "\n\n⚠️ التنسيق تعطل بسبب خطأ غير متوقع.",
                 )
         except Unauthorized as excp:
             if excp.message == "bot is not a member of the channel chat":
                 bot.send_message(
-                    orig_chat_id, "I don't have access to the log channel - unsetting."
+                    orig_chat_id, "❌ ما عندي صلاحية للوصول لقناة السجل - راح نشيل الإعداد."
                 )
                 sql.stop_chat_logging(orig_chat_id)
 
@@ -137,13 +137,13 @@ if is_module_loaded(FILENAME):
         if log_channel:
             log_channel_info = bot.get_chat(log_channel)
             message.reply_text(
-                f"This group has all it's logs sent to:"
+                f"📋 هذا القروب كل سجلاته تتبعث لـ:"
                 f" {escape_markdown(log_channel_info.title)} (`{log_channel}`)",
                 parse_mode=ParseMode.MARKDOWN,
             )
 
         else:
-            message.reply_text("No log channel has been set for this group!")
+            message.reply_text("❌ ما تم تحديد قناة سجل لهذا القروب!")
 
 
     @kigcmd(command='setlog')
@@ -155,7 +155,7 @@ if is_module_loaded(FILENAME):
         chat = update.effective_chat
         if chat.type == chat.CHANNEL:
             message.reply_text(
-                "Now, forward the /setlog to the group you want to tie this channel to!"
+                "📌 توا، حوّل الـ /setlog للقروب اللي تبي تربطه بهالقناة!"
             )
 
         elif message.forward_from_chat:
@@ -165,28 +165,28 @@ if is_module_loaded(FILENAME):
             except BadRequest as excp:
                 if excp.message != 'Message to delete not found':
                     log.exception(
-                        'Error deleting message in log channel. Should work anyway though.'
+                        'خطأ في مسح الرسالة في قناة السجل. المفروض يشتغل على أي حال.'
                     )
 
             try:
                 bot.send_message(
                     message.forward_from_chat.id,
-                    f"This channel has been set as the log channel for {chat.title or chat.first_name}.",
+                    f"✅ هالقناة تم تعيينها كقناة سجل لـ {chat.title or chat.first_name}.",
                 )
             except Unauthorized as excp:
                 if excp.message == "Forbidden: bot is not a member of the channel chat":
-                    bot.send_message(chat.id, "Successfully set log channel!")
+                    bot.send_message(chat.id, "✅ تم تعيين قناة السجل بنجاح!")
                 else:
-                    log.exception("ERROR in setting the log channel.")
+                    log.exception("خطأ في تعيين قناة السجل.")
 
-            bot.send_message(chat.id, "Successfully set log channel!")
+            bot.send_message(chat.id, "✅ تم تعيين قناة السجل بنجاح!")
 
         else:
             message.reply_text(
-                "The steps to set a log channel are:\n"
-                " - add bot to the desired channel\n"
-                " - send /setlog to the channel\n"
-                " - forward the /setlog to the group\n"
+                "📝 الخطوات باش تعيّن قناة سجل:\n"
+                " - أضف البوت للقناة اللي تبيها (كأدمن!)\n"
+                " - أرسل /setlog فالقناة\n"
+                " - حوّل رسالة الـ /setlog للقروب\n"
             )
 
 
@@ -201,16 +201,16 @@ if is_module_loaded(FILENAME):
         log_channel = sql.stop_chat_logging(chat.id)
         if log_channel:
             bot.send_message(
-                log_channel, f"Channel has been unlinked from {chat.title}"
+                log_channel, f"📤 القناة تم فصلها عن {chat.title}"
             )
-            message.reply_text("Log channel has been un-set.")
+            message.reply_text("✅ تم إلغاء تعيين قناة السجل.")
 
         else:
-            message.reply_text("No log channel has been set yet!")
+            message.reply_text("❌ ما تم تعيين قناة سجل بعد!")
 
 
     def __stats__():
-        return f"• {sql.num_logchannels()} log channels set."
+        return f"• {sql.num_logchannels()} قناة سجل معينة."
 
 
     def __migrate__(old_chat_id, new_chat_id):
@@ -221,26 +221,26 @@ if is_module_loaded(FILENAME):
         log_channel = sql.get_chat_log_channel(chat_id)
         if log_channel:
             log_channel_info = dispatcher.bot.get_chat(log_channel)
-            return f"This group has all it's logs sent to: {escape_markdown(log_channel_info.title)} (`{log_channel}`)"
-        return "No log channel is set for this group!"
+            return f"📋 هذا القروب كل سجلاته تتبعث لـ: {escape_markdown(log_channel_info.title)} (`{log_channel}`)"
+        return "❌ ما فيش قناة سجل معينة لهذا القروب!"
 
 
     __help__ = """
-*Admins only:*
-• `/logchannel`*:* get log channel info
-• `/setlog`*:* set the log channel.
-• `/unsetlog`*:* unset the log channel.
+*للأدمنية فقط:*
+• `/logchannel`*:* عرض معلومات قناة السجل
+• `/setlog`*:* تعيين قناة السجل
+• `/unsetlog`*:* إلغاء تعيين قناة السجل
 
-Setting the log channel is done by:
-• adding the bot to the desired channel (as an admin!)
-• sending `/setlog` in the channel
-• forwarding the `/setlog` to the group
+طريقة تعيين قناة السجل:
+• أضف البوت للقناة اللي تبيها (كأدمن!)
+• أرسل `/setlog` فالقناة
+• حوّل رسالة الـ `/setlog` للقروب
 """
 
-    __mod_name__ = "Logger"
+    __mod_name__ = "📋 السجل"
 
 else:
-    # run anyway if module not loaded
+    # يشتغل على أي حال لو الموديول مش محمّل
     def loggable(func):
         return func
 
@@ -261,20 +261,20 @@ def log_settings(update: Update, _: CallbackContext):
     btn = InlineKeyboardMarkup(
         [
             [
-                InlineKeyboardButton(text="Warn", callback_data="log_tog_warn"),
-                InlineKeyboardButton(text="Action", callback_data="log_tog_act")
+                InlineKeyboardButton(text="⚠️ التحذيرات", callback_data="log_tog_warn"),
+                InlineKeyboardButton(text="⚡ الإجراءات", callback_data="log_tog_act")
             ],
             [
-                InlineKeyboardButton(text="Join", callback_data="log_tog_join"),
-                InlineKeyboardButton(text="Leave", callback_data="log_tog_leave")
+                InlineKeyboardButton(text="📥 الدخول", callback_data="log_tog_join"),
+                InlineKeyboardButton(text="📤 الخروج", callback_data="log_tog_leave")
             ],
             [
-                InlineKeyboardButton(text="Report", callback_data="log_tog_rep")
+                InlineKeyboardButton(text="🚨 البلاغات", callback_data="log_tog_rep")
             ]
         ]
     )
     msg = update.effective_message
-    msg.reply_text("Toggle channel log settings", reply_markup=btn)
+    msg.reply_text("⚙️ تبديل إعدادات سجل القناة", reply_markup=btn)
 
 
 from .sql import log_channel_sql as sql
@@ -294,23 +294,23 @@ def log_setting_callback(update: Update, context: CallbackContext):
     t = sql.get_chat_setting(chat.id)
     if setting == "warn":
         r = t.toggle_warn()
-        cb.answer("Warning log set to {}".format(r))
+        cb.answer("سجل التحذيرات: {}".format("✅ مفعّل" if r else "❌ معطّل"))
         return
     if setting == "act":
         r = t.toggle_action()
-        cb.answer("Action log set to {}".format(r))
+        cb.answer("سجل الإجراءات: {}".format("✅ مفعّل" if r else "❌ معطّل"))
         return
     if setting == "join":
         r = t.toggle_joins()
-        cb.answer("Join log set to {}".format(r))
+        cb.answer("سجل الدخول: {}".format("✅ مفعّل" if r else "❌ معطّل"))
         return
     if setting == "leave":
         r = t.toggle_leave()
-        cb.answer("Leave log set to {}".format(r))
+        cb.answer("سجل الخروج: {}".format("✅ مفعّل" if r else "❌ معطّل"))
         return
     if setting == "rep":
         r = t.toggle_report()
-        cb.answer("Report log set to {}".format(r))
+        cb.answer("سجل البلاغات: {}".format("✅ مفعّل" if r else "❌ معطّل"))
         return
 
-    cb.answer("Idk what to do")
+    cb.answer("🤔 ما فهمت شنو تبي")
